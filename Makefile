@@ -1,6 +1,6 @@
 trogdor.o: trogdor.c
-	gcc -Wall trogdor.c -o trogdor
+	gcc -Wall trogdor.c -o trogdor.o
 run:
-	./trogdor < in
+	./trogdor.o < in
 clean:
-	rm -f trogdor
+	rm -f trogdor.o
