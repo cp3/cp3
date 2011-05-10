@@ -1,0 +1,38 @@
+This is a README to get rid of that notification in GIT
+Type 1 Wins: 5 points
+(r,r,g,g) or (g,g,r,r) in any orientation (i.e. 2 sets of adja-
+cent same colour pieces)
+Type 2 Wins: 4 points
+(r,g,g,r) or (g,r,r,g) in any orientation (i.e. 1 set of adjacent
+same colour pieces)
+Type 3 Wins: 3 points
+(r,g,r,g) or (g,r,g,r) in any orientation (i.e. 0 sets of adja-
+cent same colour pieces)
+Concurrent Win:1,3,4,or 5 points If both players “win” on one player’s move on a non-full
+board then the player with the most total win points is
+awarded the win with the points they receive being the
+points from their maximal win. If both players have same
+number of total win points from their “wins” then both
+players will receive 1 point and the game will be declared
+a tie. For example, if red has a 5 point win and blue has
+two 3 point wins, then blue is awarded the win since their
+total win points is 6 which is greater than red’s total win
+points of 5, and blue is awarded their maximal win, which
+is 3 points, for the win.If both blue and red had one 5 point
+win each then the game would be a tie and both players
+would be awarded one point.
+Full-Board Tie: 1 point
+Loss:
+0 points
+Default:
+5 points
+Each player gets 1 point if the tie results from a full board.
+The losing player received 0 points.
+In the case of a default (max. move time exceeded, illegal
+move, etc.) the non-defaulting player will receive a 5
+point win.
+Game Time Out 5 points
+If the 20 minute maximum game time is exceeded then a 5
+point win is awarded to the player who consumed the min-
+imum time during the game
+
