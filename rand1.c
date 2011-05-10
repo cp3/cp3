@@ -73,7 +73,7 @@ int isWin(char* testBoard)
 	for (i = rows-1; i > 0; i--) {
 		for (j = 0; j < columns-3; j++) {
 			for (k = 0; k < 4; k++, l++) {
-				quads[l][k]
+				quads[l][k];
 				printf("%c ", testBoard[i+(j+k)*rows]);
 			}
 			printf("\n");
@@ -97,7 +97,7 @@ int main(void)
 	srandom(getpid() ^ ~getuid() ^ tv.tv_sec ^ tv.tv_usec);
 
 	readboard();
-	
+
 	do
 		col = random() % columns;
 	while (board[col * rows + rows - 1] != 's');
