@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#define SPACE	1
+#define RED		2
+#define BLUE	4
+#define GREEN	8
+
 /******************************************************************************\
 * Function Prototypes                                                          *
 \******************************************************************************/
@@ -10,7 +15,7 @@ void freeboard(void);
 /******************************************************************************\
 * Global Variables                                                             *
 \******************************************************************************/
-char *board;
+int *board;
 int columns;
 int rows;
 int last_move;
@@ -24,12 +29,28 @@ int last_move_time;
 void readboard(void)
 {
 	int i, j;
+	char tmpChar = 0;
 
 	scanf("(%d,%d,%d,%d,%d,%d", &columns, &rows, &last_move, &total_time, &player_1_time, &last_move_time);
-	board = (char *)calloc(sizeof(char), rows * columns);
+	board = (int *)calloc(sizeof(int), rows * columns);
 	for (i = 0; i < columns; i++)
-		for (j = 0; j < rows; j++)
-			scanf(",%c", &board[i*rows+j]);
+		for (j = 0; j < rows; j++) {
+			scanf(",%c", &tmpChar);
+
+			switch(tmpChar) {
+				case 's':
+					board[i*rows+j] = SPACE;
+					break;
+				case 'r':
+					board[i*rows+j] = RED;
+					break;
+				case 'b':
+					board[i*rows+j] = BLUE;
+					break;
+				case 'g': board[i*rows+j] = GREEN;
+			}
+		}
+		printf("\n");
 } /* readboard */
 
 /******************************************************************************\
@@ -43,44 +64,87 @@ void freeboard(void)
 /******************************************************************************\
 * printBoard                                                                *
 \******************************************************************************/
-int printBoard(char* testBoard)
+void printBoard(int* testBoard)
 {
 	int i,j;
 	printf("From input:\n");
 	for (i = 0; i < rows*columns; i++) {
-		printf("%c", testBoard[i]);
+		printf("%d", testBoard[i]);
 	}
 	printf("\n\n");
-	for (i = rows-1; i > 0; i--) {
+	for (i = rows-1; i >= 0; i--) {
 		for (j = 0; j < columns; j++) {
-			printf("%c ", testBoard[i+j*rows]);
+			printf("%d ", testBoard[i+j*rows]);
 		}
 		printf("\n");
 	}
-
 } /* printBoard */
 
 /******************************************************************************\
 * isWin                                                                 *
 \******************************************************************************/
-int isWin(char* testBoard)
+int isWin(int* testBoard, int lastColumn)
 {
-	int i,j,k,l = 0;
-	int horizontal = rows*(columns-3), vertical = columns*(rows-3), diagonal = 2*(rows-3)*(columns-3);
+	int i, j, lastRow = rows-1, top, bot, left, right;
+	// Find height of last piece played
+	for (i=0; i < rows; i++) {
+		//printf("%d ",testBoard[i+lastColumn*rows]);
+		if (testBoard[i+lastColumn*rows] == SPACE) {
+			lastRow = i-1;
+			break;
+		}
+	}
+	printf("last piece played at (%d,%d)\n",lastColumn, lastRow);
+	printf("Total of %d columns, %d rows\n",columns, rows);
+	// Find boundaries to search, row 0 is bottom row, column 0 is left column
+	top = lastRow + 3;
+	bot = lastRow - 3;
+	left = lastColumn - 3;
+	right = lastColumn + 3;
+
+	// Boundaries cannot be outside of map
+	if (top > rows-1) top = rows-1;
+	if (bot < 0) bot = 0;
+	if (right > columns-1) right = columns-1;
+	if (left < 0) left = 0;
+
+	printf("Top: %d, Bottom: %d, Right: %d, Left: %d\n",top, bot, right, left);
+
+	// Print board to be searched
+	for (i = top; i >= bot; i--) {
+		for (j = left; j <= right; j++) {
+			printf("%d ", testBoard[i+j*rows]);
+		}
+		printf("\n");
+	}
+
+	/*int horizontal = rows*(columns-3), vertical = columns*(rows-3), diagonal = 2*(rows-3)*(columns-3);
 	char quads[horizontal+vertical+diagonal][4];
 	printf("Horizontal: %d\nVertical %d\nDiagonal %d\n",horizontal, vertical, diagonal);
 	// Do horizontal sections
 	for (i = rows-1; i > 0; i--) {
 		for (j = 0; j < columns-3; j++) {
 			for (k = 0; k < 4; k++, l++) {
-				quads[l][k];
-				printf("%c ", testBoard[i+(j+k)*rows]);
+				//quads[l][k] = testBoard[i+(j+k)*rows];
+				//printf("%c ", testBoard[i+(j+k)*rows]);
+			}
+			//printf("\n");
+		}
+		//printf("\n");
+	}
+	// TODO: Do vertical sections
+	for (i = 0; i < columns; i++) {
+		for (j = 0; j < rows-3; j++) {
+			for (k = 0; k < 4; k++, l++) {
+				//quads[l][k] = testBoard[k+j+i*rows];
+				printf("%c ", testBoard[k+j+i*rows]);
+				break;
 			}
 			printf("\n");
 		}
 		printf("\n");
-	}
-	// TODO: Do vertical sections
+	}*/
+	return 0;
 	// TODO: Do diagonal sections
 } /* isWin */
 
@@ -89,30 +153,24 @@ int isWin(char* testBoard)
 \******************************************************************************/
 int main(void)
 {
-	int col;
-	char p;
-	struct timeval tv;
+	//int col;
+	//char p;
 
-	gettimeofday(&tv, NULL);
-	srandom(getpid() ^ ~getuid() ^ tv.tv_sec ^ tv.tv_usec);
 
 	readboard();
 
-	do
-		col = random() % columns;
-	while (board[col * rows + rows - 1] != 's');
+	//do
+	//	col = random() % columns;
+	//while (board[col * rows + rows - 1] != 's');
 
-	if (random() % 8)
-		p = 'b';
-	else
-		p = 'g';
+	//p = 'b';
 
 	printBoard(board);
-	isWin(board);
+	isWin(board, last_move);
 
 	freeboard();
 
-	printf("(%d,%c)", col+1, p);
+	//printf("(%d,%c)", col+1, p);
 
 	return 0;
 } /* main */
