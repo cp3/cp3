@@ -85,7 +85,7 @@ void printBoard(int* testBoard)
 \******************************************************************************/
 int isWin(int* testBoard, int lastColumn)
 {
-	int i, j, lastRow = rows-1, top, bot, left, right;
+	int i, j, k, lastRow = rows-1, top, bot, left, right;
 	// Find height of last piece played
 	for (i=0; i < rows; i++) {
 		//printf("%d ",testBoard[i+lastColumn*rows]);
@@ -117,6 +117,47 @@ int isWin(int* testBoard, int lastColumn)
 		}
 		printf("\n");
 	}
+
+	// Search vertical
+	printf("Checking vertical:\n");
+	if (lastRow-bot == 3)
+		for (i=0; i<4; i++)
+			printf("%d ", testBoard[lastColumn*rows+lastRow-i]);
+	printf("\n\n");
+
+	// Search horizontal
+	printf("Checking horizontal:\n");
+	for (i=left; i<=right-3; i++) {
+		for(j=0; j<4; j++) {
+			printf("%d ", testBoard[(i+j)*rows+lastRow]);
+		}
+		printf("\n");
+	}
+	printf("\n");
+
+	// Search diagonal from top left to bottom right
+	printf("Checking diagonal:\n");
+	for (i=lastColumn, j=lastRow; i<=right && j>=bot; i++, j--) {
+		if (i-3 >= left && j+3 <= top) {
+			for(k=3; k>=0; k--) {
+				printf("%d ", testBoard[(i-k)*rows+j+k]);
+			}
+			printf("\n");
+		}
+	}
+	printf("\n");
+
+	// Search diagonal from top right to bottom left
+	printf("Checking diagonal:\n");
+	for (i=lastColumn, j=lastRow; i>=left && j>=bot; i--, j--) {
+		if (i+3 <= right && j+3 <= top) {
+			for(k=3; k>=0; k--) {
+				printf("%d ", testBoard[(i+k)*rows+j+k]);
+			}
+			printf("\n");
+		}
+	}
+	printf("\n");
 
 	/*int horizontal = rows*(columns-3), vertical = columns*(rows-3), diagonal = 2*(rows-3)*(columns-3);
 	char quads[horizontal+vertical+diagonal][4];
