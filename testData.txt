@@ -1,3 +1,4 @@
 (10,8,7,1042905,239310,21926,b,b,b,b,r,b,s,s,b,r,g,s,s,s,s,s,r,r,b,r,b,s,s,s,b,r,b,r,b,r,b,r,r,b,b,r,b,b,g,r,r,r,r,b,r,b,b,g,r,g,b,r,b,r,s,s,b,r,b,r,b,r,b,r,s,s,s,s,s,s,s,s,b,r,r,b,r,b,r,g)	0
 (10,8,7,1042905,239310,21926,b,b,b,b,r,b,s,s,b,r,g,s,s,s,s,s,r,r,b,r,b,s,s,s,b,r,b,r,b,r,b,r,r,b,b,r,b,b,g,r,r,r,r,b,r,b,b,g,r,g,b,r,b,r,s,s,b,r,b,r,b,r,b,r,s,s,s,s,s,s,s,s,b,r,r,b,r,b,r,g)	1
 (10,8,4,224112,174199,3259,g,s,s,s,s,s,s,s,b,s,s,s,s,s,s,s,g,b,g,s,s,s,s,s,r,r,g,s,s,s,s,s,g,g,r,b,g,b,r,b,b,g,s,s,s,s,s,s,b,g,s,s,s,s,s,s,r,g,s,s,s,s,s,s,g,r,s,s,s,s,s,s,g,b,s,s,s,s,s,s)	0
+(8,7,3,224112,174199,3259,s,s,s,s,s,s,s,s,s,s,s,s,s,s,b,b,b,r,b,g,s,b,r,r,g,s,s,s,b,r,b,b,r,b,r,r,r,b,r,b,r,g,s,s,s,s,s,s,s,s,s,s,s,s,s,s)	0
