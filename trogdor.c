@@ -19,6 +19,7 @@ int last_move;
 int total_time;
 int player_1_time;
 int last_move_time;
+int skipPadding;
 char pieces[4] = { 's', 'r', 'b', 'g' };
 int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -41,27 +42,36 @@ void readboard(void) {
 
 	scanf("(%d,%d,%d,%d,%d,%d", &columns, &rows, &last_move, &total_time,
 			&player_1_time, &last_move_time);
-	last_move--; // First column is zero, not one
-	board = (int *) calloc(sizeof(int), rows * columns);
+	rows += 6; // Make board bigger for padding
+	columns += 6;
+	skipPadding = 3 * rows + 3;
+	board = (int *) calloc(sizeof(int), rows * columns); // Need to pad the board with spaces
 	for (i = 0; i < columns; i++)
 		for (j = 0; j < rows; j++) {
-			scanf(",%c", &tmpChar);
-
-			switch (tmpChar) {
-			case 's':
+			if (i < 3 || i > columns - 4 || j < 3 || j > rows - 4) {
 				board[i * rows + j] = SPACE;
-				break;
-			case 'r':
-				board[i * rows + j] = RED;
-				break;
-			case 'b':
-				board[i * rows + j] = BLUE;
-				break;
-			case 'g':
-				board[i * rows + j] = GREEN;
+			} else {
+				scanf(",%c", &tmpChar);
+
+				switch (tmpChar) {
+				case 's':
+					board[i * rows + j] = SPACE;
+					break;
+				case 'r':
+					board[i * rows + j] = RED;
+					break;
+				case 'b':
+					board[i * rows + j] = BLUE;
+					break;
+				case 'g':
+					board[i * rows + j] = GREEN;
+				}
 			}
 		}
-	printf("\n");
+	// Now pretend the board is smaller!
+	//rows -= 6;
+	//columns -= 6;
+	last_move--; // First column is zero, not one
 }
 
 /**
@@ -88,6 +98,13 @@ void printBoard(int* testBoard) {
 		}
 		printf("\n");
 	}
+	printf("\n\n");
+	for (i = rows - 7; i >= 0; i--) {
+		for (j = 0; j < columns-6; j++) {
+			printf("%c ", pieces[testBoard[skipPadding + i + j * rows]]);
+		}
+		printf("\n");
+	}
 }
 
 /**
@@ -97,15 +114,15 @@ void printBoard(int* testBoard) {
  */
 int isWin(int* testBoard, int lastColumn) {
 	int i, a, b, c, d;
-	int lastRow = rows - 1;
+	int lastRow;
 	int left, right, top, bot;
 	int redPoints = 0, bluePoints = 0, redMax = 0, blueMax = 0;
 	//possible wins, values from -5 to 5
 	int possible[13];
-	// Find height of last piece played
-	for (i = 0; i < rows; i++) {
+	// Find height of last piece played, may hit padding
+	for (i = 0;; i++) {
 		//printf("%d ",testBoard[i+lastColumn*rows]);
-		if (testBoard[i + lastColumn * rows] == SPACE) {
+		if (testBoard[skipPadding + i + lastColumn * rows] == SPACE) {
 			lastRow = i - 1;
 			break;
 		}
@@ -120,88 +137,86 @@ int isWin(int* testBoard, int lastColumn) {
 
 	//printf("Top: %d, Bottom: %d, Right: %d, Left: %d\n", top, bot, right, left);
 
-	//TODO: pad the board!!
-	
 	// Search vertical
-	a = testBoard[lastColumn * rows + lastRow];
-	b = testBoard[lastColumn * rows + lastRow - 1] << 2;
-	c = testBoard[lastColumn * rows + lastRow - 2] << 4;
-	d = testBoard[lastColumn * rows + lastRow - 3] << 6;
+	a = testBoard[skipPadding + lastColumn * rows + lastRow];
+	b = testBoard[skipPadding + lastColumn * rows + lastRow - 1] << 2;
+	c = testBoard[skipPadding + lastColumn * rows + lastRow - 2] << 4;
+	d = testBoard[skipPadding + lastColumn * rows + lastRow - 3] << 6;
 	possible[0] = points[a + b + c + d];
 
 	// Search horizontal
-	a = testBoard[(left) * rows + lastRow];
-	b = testBoard[(left + 1) * rows + lastRow] << 2;
-	c = testBoard[(left + 2) * rows + lastRow] << 4;
-	d = testBoard[(left + 3) * rows + lastRow] << 6;
+	a = testBoard[skipPadding + (left) * rows + lastRow];
+	b = testBoard[skipPadding + (left + 1) * rows + lastRow] << 2;
+	c = testBoard[skipPadding + (left + 2) * rows + lastRow] << 4;
+	d = testBoard[skipPadding + (left + 3) * rows + lastRow] << 6;
 	possible[1] = points[a + b + c + d];
 
-	a = testBoard[(left + 1) * rows + lastRow];
-	b = testBoard[(left + 2) * rows + lastRow] << 2;
-	c = testBoard[(left + 3) * rows + lastRow] << 4;
-	d = testBoard[(left + 4) * rows + lastRow] << 6;
+	a = testBoard[skipPadding + (left + 1) * rows + lastRow];
+	b = testBoard[skipPadding + (left + 2) * rows + lastRow] << 2;
+	c = testBoard[skipPadding + (left + 3) * rows + lastRow] << 4;
+	d = testBoard[skipPadding + (left + 4) * rows + lastRow] << 6;
 	possible[2] = points[a + b + c + d];
 
-	a = testBoard[(left + 2) * rows + lastRow];
-	b = testBoard[(left + 3) * rows + lastRow] << 2;
-	c = testBoard[(left + 4) * rows + lastRow] << 4;
-	d = testBoard[(left + 5) * rows + lastRow] << 6;
+	a = testBoard[skipPadding + (left + 2) * rows + lastRow];
+	b = testBoard[skipPadding + (left + 3) * rows + lastRow] << 2;
+	c = testBoard[skipPadding + (left + 4) * rows + lastRow] << 4;
+	d = testBoard[skipPadding + (left + 5) * rows + lastRow] << 6;
 	possible[3] = points[a + b + c + d];
 
-	a = testBoard[(left + 3) * rows + lastRow];
-	b = testBoard[(left + 4) * rows + lastRow] << 2;
-	c = testBoard[(left + 5) * rows + lastRow] << 4;
-	d = testBoard[(left + 6) * rows + lastRow] << 6;
+	a = testBoard[skipPadding + (left + 3) * rows + lastRow];
+	b = testBoard[skipPadding + (left + 4) * rows + lastRow] << 2;
+	c = testBoard[skipPadding + (left + 5) * rows + lastRow] << 4;
+	d = testBoard[skipPadding + (left + 6) * rows + lastRow] << 6;
 	possible[4] = points[a + b + c + d];
 
 	// Search diagonal from top left to bottom right
-	a = testBoard[(lastColumn - 0) * rows + lastRow + 0];
-	b = testBoard[(lastColumn - 1) * rows + lastRow + 1] << 2;
-	c = testBoard[(lastColumn - 2) * rows + lastRow + 2] << 4;
-	d = testBoard[(lastColumn - 3) * rows + lastRow + 3] << 6;
+	a = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0];
+	b = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow + 1] << 2;
+	c = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow + 2] << 4;
+	d = testBoard[skipPadding + (lastColumn - 3) * rows + lastRow + 3] << 6;
 	possible[5] = points[a + b + c + d];
 
-	a = testBoard[(lastColumn + 1) * rows + lastRow - 1];
-	b = testBoard[(lastColumn - 0) * rows + lastRow + 0] << 2;
-	c = testBoard[(lastColumn - 1) * rows + lastRow + 1] << 4;
-	d = testBoard[(lastColumn - 2) * rows + lastRow + 2] << 6;
+	a = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow - 1];
+	b = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0] << 2;
+	c = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow + 1] << 4;
+	d = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow + 2] << 6;
 	possible[6] = points[a + b + c + d];
 
-	a = testBoard[(lastColumn + 2) * rows + lastRow - 2];
-	b = testBoard[(lastColumn + 1) * rows + lastRow - 1] << 2;
-	c = testBoard[(lastColumn - 0) * rows + lastRow + 0] << 4;
-	d = testBoard[(lastColumn - 1) * rows + lastRow + 1] << 6;
+	a = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow - 2];
+	b = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow - 1] << 2;
+	c = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0] << 4;
+	d = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow + 1] << 6;
 	possible[7] = points[a + b + c + d];
 
-	a = testBoard[(lastColumn + 3) * rows + lastRow - 3];
-	b = testBoard[(lastColumn + 2) * rows + lastRow - 2] << 2;
-	c = testBoard[(lastColumn + 1) * rows + lastRow - 1] << 4;
-	d = testBoard[(lastColumn - 0) * rows + lastRow + 0] << 6;
+	a = testBoard[skipPadding + (lastColumn + 3) * rows + lastRow - 3];
+	b = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow - 2] << 2;
+	c = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow - 1] << 4;
+	d = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0] << 6;
 	possible[8] = points[a + b + c + d];
 
 	// Search diagonal from top right to bottom left
-	a = testBoard[(lastColumn + 0) * rows + lastRow + 0];
-	b = testBoard[(lastColumn + 1) * rows + lastRow + 1] << 2;
-	c = testBoard[(lastColumn + 2) * rows + lastRow + 2] << 4;
-	d = testBoard[(lastColumn + 3) * rows + lastRow + 3] << 6;
+	a = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0];
+	b = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow + 1] << 2;
+	c = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow + 2] << 4;
+	d = testBoard[skipPadding + (lastColumn + 3) * rows + lastRow + 3] << 6;
 	possible[9] = points[a + b + c + d];
 
-	a = testBoard[(lastColumn - 1) * rows + lastRow - 1];
-	b = testBoard[(lastColumn + 0) * rows + lastRow + 0] << 2;
-	c = testBoard[(lastColumn + 1) * rows + lastRow + 1] << 4;
-	d = testBoard[(lastColumn + 2) * rows + lastRow + 2] << 6;
+	a = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow - 1];
+	b = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0] << 2;
+	c = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow + 1] << 4;
+	d = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow + 2] << 6;
 	possible[10] = points[a + b + c + d];
 
-	a = testBoard[(lastColumn - 2) * rows + lastRow - 2];
-	b = testBoard[(lastColumn - 1) * rows + lastRow - 1] << 2;
-	c = testBoard[(lastColumn + 0) * rows + lastRow + 0] << 4;
-	d = testBoard[(lastColumn + 1) * rows + lastRow + 1] << 6;
+	a = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow - 2];
+	b = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow - 1] << 2;
+	c = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0] << 4;
+	d = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow + 1] << 6;
 	possible[11] = points[a + b + c + d];
 
-	a = testBoard[(lastColumn - 3) * rows + lastRow - 3];
-	b = testBoard[(lastColumn - 2) * rows + lastRow - 2] << 2;
-	c = testBoard[(lastColumn - 1) * rows + lastRow - 1] << 4;
-	d = testBoard[(lastColumn + 0) * rows + lastRow + 0] << 6;
+	a = testBoard[skipPadding + (lastColumn - 3) * rows + lastRow - 3];
+	b = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow - 2] << 2;
+	c = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow - 1] << 4;
+	d = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0] << 6;
 	possible[12] = points[a + b + c + d];
 
 	// If there are any wins
@@ -221,10 +236,10 @@ int isWin(int* testBoard, int lastColumn) {
 			}
 		}
 		if (redPoints > bluePoints) {
-			return redMax;
+			return 0 - redMax;	// Apparently player one is blue, not red like I thought
 		}
 		if (redPoints < bluePoints) {
-			return blueMax;
+			return 0 - blueMax;
 		} else {
 			return 1;
 		}
@@ -292,7 +307,7 @@ int main(void) {
 	//p = 'b';
 
 	//printBoard(board);
-	printf("%d\n",isWin(board, last_move));
+	printf("%d\n", isWin(board, last_move));
 	//tempPrint();
 	freeboard();
 
