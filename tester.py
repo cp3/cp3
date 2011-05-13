@@ -22,7 +22,6 @@ def main():
 		actual = commands.getstatusoutput('./trogdor.o < pipeData')
 		end = time.time()
 		if(actual[1] == expected):
-			print 'Pass'
 			numberPassed+=1
 			listOfTimes.append(end-start)
 		else:
