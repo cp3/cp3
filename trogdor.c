@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#define SPACE	1
-#define RED		2
-#define BLUE	4
-#define GREEN	8
+#define SPACE	0
+#define RED		1
+#define BLUE	2
+#define GREEN	3
 
 // Function Prototypes
 
@@ -19,6 +19,18 @@ int last_move;
 int total_time;
 int player_1_time;
 int last_move_time;
+char pieces[4] = { 's', 'r', 'b', 'g' };
+int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		-3, 0, 0, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, -4, 0, 0, -3, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, -5, 0, 0, 0, 0, 0, };
 
 /**
  * Reads in the board and other variables from standard in.
@@ -67,12 +79,12 @@ void printBoard(int* testBoard) {
 	int i, j;
 	printf("From input:\n");
 	for (i = 0; i < rows * columns; i++) {
-		printf("%d", testBoard[i]);
+		printf("%c", pieces[testBoard[i]]);
 	}
 	printf("\n\n");
 	for (i = rows - 1; i >= 0; i--) {
 		for (j = 0; j < columns; j++) {
-			printf("%d ", testBoard[i + j * rows]);
+			printf("%c ", pieces[testBoard[i + j * rows]]);
 		}
 		printf("\n");
 	}
@@ -84,9 +96,12 @@ void printBoard(int* testBoard) {
  * Negative values are points for the other team.
  */
 int isWin(int* testBoard, int lastColumn) {
-	int i, j, k, lastRow = rows - 1, top, bot, left, right;
-	// Total and maximal win points for red and blue
-	int totalRed = 0, totalBlue = 0, maxRed = 0, maxBlue = 0;
+	int i, a, b, c, d;
+	int lastRow = rows - 1;
+	int left, right, top, bot;
+	int redPoints = 0, bluePoints = 0, redMax = 0, blueMax = 0;
+	//possible wins, values from -5 to 5
+	int possible[13];
 	// Find height of last piece played
 	for (i = 0; i < rows; i++) {
 		//printf("%d ",testBoard[i+lastColumn*rows]);
@@ -95,76 +110,169 @@ int isWin(int* testBoard, int lastColumn) {
 			break;
 		}
 	}
-	printf("last piece played at (%d,%d)\n", lastColumn, lastRow);
-	printf("Total of %d columns, %d rows\n", columns, rows);
+	//printf("last piece played at (%d,%d)\n", lastColumn, lastRow);
+	//printf("Total of %d columns, %d rows\n", columns, rows);
 	// Find boundaries to search, row 0 is bottom row, column 0 is left column
 	top = lastRow + 3;
 	bot = lastRow - 3;
 	left = lastColumn - 3;
 	right = lastColumn + 3;
 
-	// Boundaries cannot be outside of map
-	if (top > rows - 1)
-		top = rows - 1;
-	if (bot < 0)
-		bot = 0;
-	if (right > columns - 1)
-		right = columns - 1;
-	if (left < 0)
-		left = 0;
+	//printf("Top: %d, Bottom: %d, Right: %d, Left: %d\n", top, bot, right, left);
 
-	printf("Top: %d, Bottom: %d, Right: %d, Left: %d\n", top, bot, right, left);
-
-	// Print board to be searched
-	for (i = top; i >= bot; i--) {
-		for (j = left; j <= right; j++) {
-			printf("%d ", testBoard[i + j * rows]);
-		}
-		printf("\n");
-	}
-
+	//TODO: pad the board!!
+	
 	// Search vertical
-	printf("Checking vertical:\n");
-	if (lastRow - bot == 3)
-		for (i = 0; i < 4; i++)
-			printf("%d ", testBoard[lastColumn * rows + lastRow - i]);
-	printf("\n\n");
+	a = testBoard[lastColumn * rows + lastRow];
+	b = testBoard[lastColumn * rows + lastRow - 1] << 2;
+	c = testBoard[lastColumn * rows + lastRow - 2] << 4;
+	d = testBoard[lastColumn * rows + lastRow - 3] << 6;
+	possible[0] = points[a + b + c + d];
 
 	// Search horizontal
-	printf("Checking horizontal:\n");
-	for (i = left; i <= right - 3; i++) {
-		for (j = 0; j < 4; j++) {
-			printf("%d ", testBoard[(i + j) * rows + lastRow]);
-		}
-		printf("\n");
-	}
-	printf("\n");
+	a = testBoard[(left) * rows + lastRow];
+	b = testBoard[(left + 1) * rows + lastRow] << 2;
+	c = testBoard[(left + 2) * rows + lastRow] << 4;
+	d = testBoard[(left + 3) * rows + lastRow] << 6;
+	possible[1] = points[a + b + c + d];
+
+	a = testBoard[(left + 1) * rows + lastRow];
+	b = testBoard[(left + 2) * rows + lastRow] << 2;
+	c = testBoard[(left + 3) * rows + lastRow] << 4;
+	d = testBoard[(left + 4) * rows + lastRow] << 6;
+	possible[2] = points[a + b + c + d];
+
+	a = testBoard[(left + 2) * rows + lastRow];
+	b = testBoard[(left + 3) * rows + lastRow] << 2;
+	c = testBoard[(left + 4) * rows + lastRow] << 4;
+	d = testBoard[(left + 5) * rows + lastRow] << 6;
+	possible[3] = points[a + b + c + d];
+
+	a = testBoard[(left + 3) * rows + lastRow];
+	b = testBoard[(left + 4) * rows + lastRow] << 2;
+	c = testBoard[(left + 5) * rows + lastRow] << 4;
+	d = testBoard[(left + 6) * rows + lastRow] << 6;
+	possible[4] = points[a + b + c + d];
 
 	// Search diagonal from top left to bottom right
-	printf("Checking diagonal:\n");
-	for (i = lastColumn, j = lastRow; i <= right && j >= bot; i++, j--) {
-		if (i - 3 >= left && j + 3 <= top) {
-			for (k = 3; k >= 0; k--) {
-				printf("%d ", testBoard[(i - k) * rows + j + k]);
-			}
-			printf("\n");
-		}
-	}
-	printf("\n");
+	a = testBoard[(lastColumn - 0) * rows + lastRow + 0];
+	b = testBoard[(lastColumn - 1) * rows + lastRow + 1] << 2;
+	c = testBoard[(lastColumn - 2) * rows + lastRow + 2] << 4;
+	d = testBoard[(lastColumn - 3) * rows + lastRow + 3] << 6;
+	possible[5] = points[a + b + c + d];
+
+	a = testBoard[(lastColumn + 1) * rows + lastRow - 1];
+	b = testBoard[(lastColumn - 0) * rows + lastRow + 0] << 2;
+	c = testBoard[(lastColumn - 1) * rows + lastRow + 1] << 4;
+	d = testBoard[(lastColumn - 2) * rows + lastRow + 2] << 6;
+	possible[6] = points[a + b + c + d];
+
+	a = testBoard[(lastColumn + 2) * rows + lastRow - 2];
+	b = testBoard[(lastColumn + 1) * rows + lastRow - 1] << 2;
+	c = testBoard[(lastColumn - 0) * rows + lastRow + 0] << 4;
+	d = testBoard[(lastColumn - 1) * rows + lastRow + 1] << 6;
+	possible[7] = points[a + b + c + d];
+
+	a = testBoard[(lastColumn + 3) * rows + lastRow - 3];
+	b = testBoard[(lastColumn + 2) * rows + lastRow - 2] << 2;
+	c = testBoard[(lastColumn + 1) * rows + lastRow - 1] << 4;
+	d = testBoard[(lastColumn - 0) * rows + lastRow + 0] << 6;
+	possible[8] = points[a + b + c + d];
 
 	// Search diagonal from top right to bottom left
-	printf("Checking diagonal:\n");
-	for (i = lastColumn, j = lastRow; i >= left && j >= bot; i--, j--) {
-		if (i + 3 <= right && j + 3 <= top) {
-			for (k = 3; k >= 0; k--) {
-				printf("%d ", testBoard[(i + k) * rows + j + k]);
+	a = testBoard[(lastColumn + 0) * rows + lastRow + 0];
+	b = testBoard[(lastColumn + 1) * rows + lastRow + 1] << 2;
+	c = testBoard[(lastColumn + 2) * rows + lastRow + 2] << 4;
+	d = testBoard[(lastColumn + 3) * rows + lastRow + 3] << 6;
+	possible[9] = points[a + b + c + d];
+
+	a = testBoard[(lastColumn - 1) * rows + lastRow - 1];
+	b = testBoard[(lastColumn + 0) * rows + lastRow + 0] << 2;
+	c = testBoard[(lastColumn + 1) * rows + lastRow + 1] << 4;
+	d = testBoard[(lastColumn + 2) * rows + lastRow + 2] << 6;
+	possible[10] = points[a + b + c + d];
+
+	a = testBoard[(lastColumn - 2) * rows + lastRow - 2];
+	b = testBoard[(lastColumn - 1) * rows + lastRow - 1] << 2;
+	c = testBoard[(lastColumn + 0) * rows + lastRow + 0] << 4;
+	d = testBoard[(lastColumn + 1) * rows + lastRow + 1] << 6;
+	possible[11] = points[a + b + c + d];
+
+	a = testBoard[(lastColumn - 3) * rows + lastRow - 3];
+	b = testBoard[(lastColumn - 2) * rows + lastRow - 2] << 2;
+	c = testBoard[(lastColumn - 1) * rows + lastRow - 1] << 4;
+	d = testBoard[(lastColumn + 0) * rows + lastRow + 0] << 6;
+	possible[12] = points[a + b + c + d];
+
+	// If there are any wins
+	if (possible[0] || possible[1] || possible[2] || possible[3] || possible[4]
+			|| possible[5] || possible[6] || possible[7] || possible[8]
+			|| possible[9] || possible[10] || possible[11] || possible[12]) {
+		// calculate total wins for each team
+		for (i = 0; i < 13; i++) {
+			if (possible[i] > 0) {
+				redPoints += possible[i];
+				if (possible[i] > redMax)
+					redMax = possible[i];
+			} else {
+				bluePoints -= possible[i];
+				if (possible[i] < blueMax)
+					blueMax = possible[i];
 			}
-			printf("\n");
+		}
+		if (redPoints > bluePoints) {
+			return redMax;
+		}
+		if (redPoints < bluePoints) {
+			return blueMax;
+		} else {
+			return 1;
 		}
 	}
-	printf("\n");
 
 	return 0;
+}
+
+// Prints out the array that defines points for piece combinations
+void tempPrint() {
+	int i, a, b, c, d, val;
+	printf("int points[256] = { ");
+	for (i = 0; i < 256; i++) {
+		val = 0;
+		a = i & 3;
+		b = (i & 12) >> 2;
+		c = (i & 48) >> 4;
+		d = (i & 192) >> 6;
+		if (a == 1 && b == 1 && c == 3 && d == 3)
+			val = 5;
+		if (a == 3 && b == 3 && c == 1 && d == 1)
+			val = 5;
+		if (a == 2 && b == 2 && c == 3 && d == 3)
+			val = -5;
+		if (a == 3 && b == 3 && c == 2 && d == 2)
+			val = -5;
+
+		if (a == 1 && b == 3 && c == 3 && d == 1)
+			val = 4;
+		if (a == 3 && b == 1 && c == 1 && d == 3)
+			val = 4;
+		if (a == 2 && b == 3 && c == 3 && d == 2)
+			val = -4;
+		if (a == 3 && b == 2 && c == 2 && d == 3)
+			val = -4;
+
+		if (a == 1 && b == 3 && c == 1 && d == 3)
+			val = 3;
+		if (a == 3 && b == 1 && c == 3 && d == 1)
+			val = 3;
+		if (a == 2 && b == 3 && c == 2 && d == 3)
+			val = -3;
+		if (a == 3 && b == 2 && c == 3 && d == 2)
+			val = -3;
+
+		printf("%d, ", val);
+	}
+	printf("};");
 }
 
 /**
@@ -183,9 +291,9 @@ int main(void) {
 
 	//p = 'b';
 
-	printBoard(board);
-	isWin(board, last_move);
-
+	//printBoard(board);
+	printf("%d\n",isWin(board, last_move));
+	//tempPrint();
 	freeboard();
 
 	//printf("(%d,%c)", col+1, p);
