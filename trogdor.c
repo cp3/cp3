@@ -1,11 +1,14 @@
 #include <stdio.h>
-#include <sys/time.h>
+#include <time.h>
 #include <stdlib.h>
 
 #define SPACE	0
 #define RED		1
 #define BLUE	2
 #define GREEN	3
+
+// Macros
+#define getPiece(r,c) testBoard[skipPadding + r + c * rows]
 
 // Function Prototypes
 
@@ -22,18 +25,18 @@ int player_1_time;
 int last_move_time;
 int skipPadding;
 char pieces[4] = { 's', 'r', 'b', 'g' };
-int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 768, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 1024, 0, 0, 768, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1280,
-	0, 0, 0, 0, 0 };
+int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		768, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 1024, 0, 0, 768, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1280, 0, 0, 0,
+		0, 0 };
 
 /**
  * Reads in the board and other variables from standard in.
@@ -99,11 +102,12 @@ void printBoard(int* testBoard) {
 	}
 	printf("\n\n");
 	for (i = rows - 7; i >= 0; i--) {
-		for (j = 0; j < columns-6; j++) {
-			printf("%c ", pieces[testBoard[skipPadding + i + j * rows]]);
+		for (j = 0; j < columns - 6; j++) {
+			printf("%c ", pieces[getPiece(i,j)]);
 		}
 		printf("\n");
 	}
+	printf("\n");
 }
 
 /**
@@ -137,91 +141,92 @@ int isWin(int* testBoard, int lastColumn) {
 	//printf("Top: %d, Bottom: %d, Right: %d, Left: %d\n", top, bot, right, left);
 
 	// Search vertical
-	a = testBoard[skipPadding + lastColumn * rows + lastRow];
-	b = testBoard[skipPadding + lastColumn * rows + lastRow - 1] << 2;
-	c = testBoard[skipPadding + lastColumn * rows + lastRow - 2] << 4;
-	d = testBoard[skipPadding + lastColumn * rows + lastRow - 3] << 6;
+	a = getPiece(lastRow,lastColumn);
+	b = getPiece(lastRow-1,lastColumn) << 2;
+	c = getPiece(lastRow-2,lastColumn) << 4;
+	d = getPiece(lastRow-3,lastColumn) << 6;
 	possible[0] = points[a + b + c + d];
 
 	// Search horizontal
-	a = testBoard[skipPadding + (left) * rows + lastRow];
-	b = testBoard[skipPadding + (left + 1) * rows + lastRow] << 2;
-	c = testBoard[skipPadding + (left + 2) * rows + lastRow] << 4;
-	d = testBoard[skipPadding + (left + 3) * rows + lastRow] << 6;
+	a = getPiece(lastRow,(left));
+	b = getPiece(lastRow,(left + 1)) << 2;
+	c = getPiece(lastRow,(left + 2)) << 4;
+	d = getPiece(lastRow,(left + 3)) << 6;
 	possible[1] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (left + 1) * rows + lastRow];
-	b = testBoard[skipPadding + (left + 2) * rows + lastRow] << 2;
-	c = testBoard[skipPadding + (left + 3) * rows + lastRow] << 4;
-	d = testBoard[skipPadding + (left + 4) * rows + lastRow] << 6;
+	a = getPiece(lastRow,(left + 1));
+	b = getPiece(lastRow,(left + 2)) << 2;
+	c = getPiece(lastRow,(left + 3)) << 4;
+	d = getPiece(lastRow,(left + 4)) << 6;
 	possible[2] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (left + 2) * rows + lastRow];
-	b = testBoard[skipPadding + (left + 3) * rows + lastRow] << 2;
-	c = testBoard[skipPadding + (left + 4) * rows + lastRow] << 4;
-	d = testBoard[skipPadding + (left + 5) * rows + lastRow] << 6;
+	a = getPiece(lastRow,(left + 2));
+	b = getPiece(lastRow,(left + 3)) << 2;
+	c = getPiece(lastRow,(left + 4)) << 4;
+	d = getPiece(lastRow,(left + 5)) << 6;
 	possible[3] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (left + 3) * rows + lastRow];
-	b = testBoard[skipPadding + (left + 4) * rows + lastRow] << 2;
-	c = testBoard[skipPadding + (left + 5) * rows + lastRow] << 4;
-	d = testBoard[skipPadding + (left + 6) * rows + lastRow] << 6;
+	a = getPiece(lastRow,(left + 3));
+	b = getPiece(lastRow,(left + 4)) << 2;
+	c = getPiece(lastRow,(left + 5)) << 4;
+	d = getPiece(lastRow,(left + 6)) << 6;
 	possible[4] = points[a + b + c + d];
 
 	// Search diagonal from top left to bottom right
-	a = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0];
-	b = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow + 1] << 2;
-	c = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow + 2] << 4;
-	d = testBoard[skipPadding + (lastColumn - 3) * rows + lastRow + 3] << 6;
+	a = getPiece((lastRow + 0),(lastColumn - 0));
+	b = getPiece((lastRow + 1),(lastColumn - 1)) << 2;
+	c = getPiece((lastRow + 2),(lastColumn - 2)) << 4;
+	d = getPiece((lastRow + 3),(lastColumn - 3)) << 6;
 	possible[5] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow - 1];
-	b = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0] << 2;
-	c = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow + 1] << 4;
-	d = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow + 2] << 6;
+	a = getPiece((lastRow - 1),(lastColumn + 1));
+	b = getPiece((lastRow + 0),(lastColumn - 0)) << 2;
+	c = getPiece((lastRow + 1),(lastColumn - 1)) << 4;
+	d = getPiece((lastRow + 2),(lastColumn - 2)) << 6;
 	possible[6] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow - 2];
-	b = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow - 1] << 2;
-	c = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0] << 4;
-	d = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow + 1] << 6;
+	a = getPiece((lastRow - 2),(lastColumn + 2));
+	b = getPiece((lastRow - 1),(lastColumn + 1)) << 2;
+	c = getPiece((lastRow + 0),(lastColumn - 0)) << 4;
+	d = getPiece((lastRow + 1),(lastColumn - 1)) << 6;
 	possible[7] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (lastColumn + 3) * rows + lastRow - 3];
-	b = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow - 2] << 2;
-	c = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow - 1] << 4;
-	d = testBoard[skipPadding + (lastColumn - 0) * rows + lastRow + 0] << 6;
+	a = getPiece((lastRow - 3),(lastColumn + 3));
+	b = getPiece((lastRow - 2),(lastColumn + 2)) << 2;
+	c = getPiece((lastRow - 1),(lastColumn + 1)) << 4;
+	d = getPiece((lastRow + 0),(lastColumn - 0)) << 6;
 	possible[8] = points[a + b + c + d];
 
 	// Search diagonal from top right to bottom left
-	a = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0];
-	b = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow + 1] << 2;
-	c = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow + 2] << 4;
-	d = testBoard[skipPadding + (lastColumn + 3) * rows + lastRow + 3] << 6;
+	a = getPiece((lastRow + 0),(lastColumn + 0));
+	b = getPiece((lastRow + 1),(lastColumn + 1)) << 2;
+	c = getPiece((lastRow + 2),(lastColumn + 2)) << 4;
+	d = getPiece((lastRow + 3),(lastColumn + 3)) << 6;
 	possible[9] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow - 1];
-	b = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0] << 2;
-	c = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow + 1] << 4;
-	d = testBoard[skipPadding + (lastColumn + 2) * rows + lastRow + 2] << 6;
+	a = getPiece((lastRow - 1),(lastColumn - 1));
+	b = getPiece((lastRow + 0),(lastColumn + 0)) << 2;
+	c = getPiece((lastRow + 1),(lastColumn + 1)) << 4;
+	d = getPiece((lastRow + 2),(lastColumn + 2)) << 6;
 	possible[10] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow - 2];
-	b = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow - 1] << 2;
-	c = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0] << 4;
-	d = testBoard[skipPadding + (lastColumn + 1) * rows + lastRow + 1] << 6;
+	a = getPiece((lastRow - 2),(lastColumn - 2));
+	b = getPiece((lastRow - 1),(lastColumn - 1)) << 2;
+	c = getPiece((lastRow + 0),(lastColumn + 0)) << 4;
+	d = getPiece((lastRow + 1),(lastColumn + 1)) << 6;
 	possible[11] = points[a + b + c + d];
 
-	a = testBoard[skipPadding + (lastColumn - 3) * rows + lastRow - 3];
-	b = testBoard[skipPadding + (lastColumn - 2) * rows + lastRow - 2] << 2;
-	c = testBoard[skipPadding + (lastColumn - 1) * rows + lastRow - 1] << 4;
-	d = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0] << 6;
+	a = getPiece((lastRow - 3),(lastColumn - 3));
+	b = getPiece((lastRow - 2),(lastColumn - 2)) << 2;
+	c = getPiece((lastRow - 1),(lastColumn - 1)) << 4;
+	d = getPiece((lastRow + 0),(lastColumn + 0)) << 6;
 	possible[12] = points[a + b + c + d];
 
 	// Add up wins
-	winPoints = possible[0] + possible[1] + possible[2] + possible[3] + possible[4]
-	+ possible[5] + possible[6] + possible[7] + possible[8] + possible[9] + possible[10]
-	+ possible[11] + possible[12];
+	winPoints = possible[0] + possible[1] + possible[2] + possible[3]
+			+ possible[4] + possible[5] + possible[6] + possible[7]
+			+ possible[8] + possible[9] + possible[10] + possible[11]
+			+ possible[12];
 
 	if (winPoints) {
 		redPoints = winPoints & 255;
@@ -251,6 +256,23 @@ int isWin(int* testBoard, int lastColumn) {
 	}
 
 	return 0;
+}
+
+void timeIswin(int times) {
+	int i;
+	clock_t t1, t2;
+	t1 = clock();
+
+	// loop until t2 gets a different value
+	for (i = 0; i < times; i++)
+		isWin(board, last_move);
+
+	t2 = clock();
+
+	printf("Ran isWin() %d times in %f s.\n", times, (double) (t2 - t1)
+			/ CLOCKS_PER_SEC);
+	printf("Average time %f µs.\n", (double) (t2 - t1) / CLOCKS_PER_SEC
+			* 1000000 / (double) times);
 }
 
 // Prints out the array that defines points for piece combinations
@@ -303,7 +325,6 @@ int main(void) {
 	//int col;
 	//char p;
 
-
 	readboard();
 
 	//do
@@ -313,6 +334,7 @@ int main(void) {
 	//p = 'b';
 
 	//printBoard(board);
+	//timeIswin(10000000);
 	printf("%d\n", isWin(board, last_move));
 	//tempPrint();
 	freeboard();
