@@ -1,7 +1,7 @@
 import commands
 import time
 '''
-Takes in inpuits from testData.txt in the form of "board description	#" 
+Takes in inputs from testData.txt in the form of "board description	#" 
 where # represents the points for a win at that point in time. 
 '''
 def main():
