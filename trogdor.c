@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/time.h>
+#include <stdlib.h>
 
 #define SPACE	0
 #define RED		1
@@ -21,17 +22,18 @@ int player_1_time;
 int last_move_time;
 int skipPadding;
 char pieces[4] = { 's', 'r', 'b', 'g' };
-int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		-3, 0, 0, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, -4, 0, 0, -3, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, -5, 0, 0, 0, 0, 0, };
+int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 768, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 1024, 0, 0, 768, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1280,
+	0, 0, 0, 0, 0 };
 
 /**
  * Reads in the board and other variables from standard in.
@@ -116,9 +118,9 @@ int isWin(int* testBoard, int lastColumn) {
 	int i, a, b, c, d;
 	int lastRow;
 	int left, right, top, bot;
-	int redPoints = 0, bluePoints = 0, redMax = 0, blueMax = 0;
+	unsigned int redPoints = 0, bluePoints = 0, redMax = 0, blueMax = 0;
 	//possible wins, values from -5 to 5
-	int possible[13];
+	unsigned int possible[13], winPoints;
 	// Find height of last piece played, may hit padding
 	for (i = 0;; i++) {
 		//printf("%d ",testBoard[i+lastColumn*rows]);
@@ -219,6 +221,21 @@ int isWin(int* testBoard, int lastColumn) {
 	d = testBoard[skipPadding + (lastColumn + 0) * rows + lastRow + 0] << 6;
 	possible[12] = points[a + b + c + d];
 
+	// Add up wins
+	winPoints = possible[0] + possible[1] + possible[2] + possible[3] + possible[4]
+	+ possible[5] + possible[6] + possible[7] + possible[8] + possible[9] + possible[10]
+	+ possible[11] + possible[12];
+
+	if (winPoints) {
+		redPoints = winPoints & 255;
+		bluePoints = (winPoints & 65280) >> 8;
+		printf ("winpoints: %d, win & number: %d, red: %d, blue: %d", winPoints, (winPoints & 65280) >> 8, redPoints, bluePoints);
+		if (redPoints > bluePoints) {
+			return 0 - redPoints;
+		}
+			//TODO: continue this hahaha!!!
+	}
+/*
 	// If there are any wins
 	if (possible[0] || possible[1] || possible[2] || possible[3] || possible[4]
 			|| possible[5] || possible[6] || possible[7] || possible[8]
@@ -243,12 +260,13 @@ int isWin(int* testBoard, int lastColumn) {
 		} else {
 			return 1;
 		}
-	}
+	}*/
 
 	return 0;
 }
 
 // Prints out the array that defines points for piece combinations
+// Points set out as 0000 0000 blue 0000 0000 red
 void tempPrint() {
 	int i, a, b, c, d, val;
 	printf("int points[256] = { ");
@@ -263,27 +281,27 @@ void tempPrint() {
 		if (a == 3 && b == 3 && c == 1 && d == 1)
 			val = 5;
 		if (a == 2 && b == 2 && c == 3 && d == 3)
-			val = -5;
+			val = 5 << 8;
 		if (a == 3 && b == 3 && c == 2 && d == 2)
-			val = -5;
+			val = 5 << 8;
 
 		if (a == 1 && b == 3 && c == 3 && d == 1)
 			val = 4;
 		if (a == 3 && b == 1 && c == 1 && d == 3)
 			val = 4;
 		if (a == 2 && b == 3 && c == 3 && d == 2)
-			val = -4;
+			val = 4 << 8;
 		if (a == 3 && b == 2 && c == 2 && d == 3)
-			val = -4;
+			val = 4 << 8;
 
 		if (a == 1 && b == 3 && c == 1 && d == 3)
 			val = 3;
 		if (a == 3 && b == 1 && c == 3 && d == 1)
 			val = 3;
 		if (a == 2 && b == 3 && c == 2 && d == 3)
-			val = -3;
+			val = 3 << 8;
 		if (a == 3 && b == 2 && c == 3 && d == 2)
-			val = -3;
+			val = 3 << 8;
 
 		printf("%d, ", val);
 	}
@@ -306,7 +324,7 @@ int main(void) {
 
 	//p = 'b';
 
-	//printBoard(board);
+	printBoard(board);
 	printf("%d\n", isWin(board, last_move));
 	//tempPrint();
 	freeboard();
