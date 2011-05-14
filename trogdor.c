@@ -70,9 +70,6 @@ void readboard(void) {
 				}
 			}
 		}
-	// Now pretend the board is smaller!
-	//rows -= 6;
-	//columns -= 6;
 	last_move--; // First column is zero, not one
 }
 
@@ -118,7 +115,7 @@ int isWin(int* testBoard, int lastColumn) {
 	int i, a, b, c, d;
 	int lastRow;
 	int left, right, top, bot;
-	unsigned int redPoints = 0, bluePoints = 0, redMax = 0, blueMax = 0;
+	unsigned int redPoints = 0, bluePoints = 0, best = 0;
 	//possible wins, values from -5 to 5
 	unsigned int possible[13], winPoints;
 	// Find height of last piece played, may hit padding
@@ -229,38 +226,29 @@ int isWin(int* testBoard, int lastColumn) {
 	if (winPoints) {
 		redPoints = winPoints & 255;
 		bluePoints = (winPoints & 65280) >> 8;
-		printf ("winpoints: %d, win & number: %d, red: %d, blue: %d", winPoints, (winPoints & 65280) >> 8, redPoints, bluePoints);
+		//printf ("winpoints: %d, win & number: %d, red: %d, blue: %d", winPoints, (winPoints & 65280) >> 8, redPoints, bluePoints);
 		if (redPoints > bluePoints) {
-			return 0 - redPoints;
-		}
-			//TODO: continue this hahaha!!!
-	}
-/*
-	// If there are any wins
-	if (possible[0] || possible[1] || possible[2] || possible[3] || possible[4]
-			|| possible[5] || possible[6] || possible[7] || possible[8]
-			|| possible[9] || possible[10] || possible[11] || possible[12]) {
-		// calculate total wins for each team
-		for (i = 0; i < 13; i++) {
-			if (possible[i] > 0) {
-				redPoints += possible[i];
-				if (possible[i] > redMax)
-					redMax = possible[i];
-			} else {
-				bluePoints -= possible[i];
-				if (possible[i] < blueMax)
-					blueMax = possible[i];
+			if (redPoints <= 5)
+				return 0 - redPoints;
+			for (i = 0; i < 13; i++) {
+				if ((possible[i] & 255) > best) {
+					best = possible[i] & 255;
+				}
 			}
-		}
-		if (redPoints > bluePoints) {
-			return 0 - redMax;	// Apparently player one is blue, not red like I thought
-		}
-		if (redPoints < bluePoints) {
-			return 0 - blueMax;
+			return 0 - best;
+		} else if (redPoints < bluePoints) {
+			if (bluePoints <= 5)
+				return bluePoints;
+			for (i = 0; i < 13; i++) {
+				if ((possible[i] & 65280) >> 8 > best) {
+					best = (possible[i] & 65280) >> 8;
+				}
+			}
+			return best;
 		} else {
 			return 1;
 		}
-	}*/
+	}
 
 	return 0;
 }
@@ -324,7 +312,7 @@ int main(void) {
 
 	//p = 'b';
 
-	printBoard(board);
+	//printBoard(board);
 	printf("%d\n", isWin(board, last_move));
 	//tempPrint();
 	freeboard();
