@@ -8,7 +8,7 @@
 #define GREEN	3
 
 // Macros
-#define getPiece(r,c) testBoard[skipPadding + r + c * rows]
+#define getPiece(r,c) board[skipPadding + r + c * rows]
 
 // Function Prototypes
 
@@ -87,16 +87,19 @@ void freeboard(void) {
  * Prints out the board to standard out.
  * For testing purposes.
  */
-void printBoard(int* testBoard) {
+void printBoard() {
 	int i, j;
 	printf("From input:\n");
-	for (i = 0; i < rows * columns; i++) {
-		printf("%c", pieces[testBoard[i]]);
+
+	for (i = 0; i < columns - 6; i++) {
+		for (j = 0; j < rows - 6; j++) {
+			printf("%c", pieces[getPiece(j,i)]);
+		}
 	}
 	printf("\n\n");
 	for (i = rows - 1; i >= 0; i--) {
 		for (j = 0; j < columns; j++) {
-			printf("%c ", pieces[testBoard[i + j * rows]]);
+			printf("%c ", pieces[board[i + j * rows]]);
 		}
 		printf("\n");
 	}
@@ -111,11 +114,11 @@ void printBoard(int* testBoard) {
 }
 
 /**
- * Takes in an array of integers and the last column played
+ * Takes in the last column played
  * Returns an int value of points scored from the board.
  * Negative values are points for the other team.
  */
-int isWin(int* testBoard, int lastColumn) {
+int isWin(int lastColumn) {
 	int i, a, b, c, d;
 	int lastRow;
 	int left, right, top, bot;
@@ -124,8 +127,8 @@ int isWin(int* testBoard, int lastColumn) {
 	unsigned int possible[13], winPoints;
 	// Find height of last piece played, may hit padding
 	for (i = 0;; i++) {
-		//printf("%d ",testBoard[i+lastColumn*rows]);
-		if (testBoard[skipPadding + i + lastColumn * rows] == SPACE) {
+		//printf("%d ",board[i+lastColumn*rows]);
+		if (getPiece(i,lastColumn) == SPACE) {
 			lastRow = i - 1;
 			break;
 		}
@@ -265,7 +268,7 @@ void timeIswin(int times) {
 
 	// loop until t2 gets a different value
 	for (i = 0; i < times; i++)
-		isWin(board, last_move);
+		isWin(last_move);
 
 	t2 = clock();
 
@@ -318,24 +321,54 @@ void tempPrint() {
 	printf("};");
 }
 
+int getTop(int column) {
+	int top, i;
+	for (i = 0;; i++) {
+		if (getPiece(i,column) == SPACE) {
+			top = i;
+			return top;
+		}
+	}
+}
+
+int bestMove() {
+	int i, best = -5, colour, temp, move, top;
+	for (i = 0; i<columns-6; i++) {
+		top = getTop(i);
+		if (top > rows) continue;
+		//try blue
+		getPiece(i,top) = BLUE;
+		temp = isWin(i);
+		if (temp > best) best = temp, move = i, colour = BLUE;
+		// Try green
+		getPiece(i,top) = GREEN;
+		temp = isWin(i);
+		if (temp > best) best = temp, move = i, colour = GREEN;
+		
+		getPiece(i,top) = SPACE;
+	}
+	// column << 1 + 0 for blue, 1 for green
+	return (move << 1) + colour - 2;
+}
+
+
+
 /**
  * Calls functions to read in board etc.
  */
 int main(void) {
-	//int col;
-	//char p;
+	int col, move;
+	char p;
 
 	readboard();
+	
+	move = bestMove();
+	col = (move & 62) >> 1;
+	p = pieces[(move & 1) + 2];
 
-	//do
-	//	col = random() % columns;
-	//while (board[col * rows + rows - 1] != 's');
-
-	//p = 'b';
-
-	//printBoard(board);
+	//printBoard();
 	//timeIswin(10000000);
-	printf("%d\n", isWin(board, last_move));
+	printf("%d\n", isWin(last_move));
 	//tempPrint();
 	freeboard();
 
