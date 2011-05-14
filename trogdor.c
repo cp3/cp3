@@ -90,8 +90,11 @@ void freeboard(void) {
 void printBoard(int* testBoard) {
 	int i, j;
 	printf("From input:\n");
-	for (i = 0; i < rows * columns; i++) {
-		printf("%c", pieces[testBoard[i]]);
+
+	for (i = 0; i < columns - 6; i++) {
+		for (j = 0; j < rows - 6; j++) {
+			printf("%c", pieces[getPiece(j,i)]);
+		}
 	}
 	printf("\n\n");
 	for (i = rows - 1; i >= 0; i--) {
@@ -333,7 +336,7 @@ int main(void) {
 
 	//p = 'b';
 
-	//printBoard(board);
+	printBoard(board);
 	//timeIswin(10000000);
 	printf("%d\n", isWin(board, last_move));
 	//tempPrint();
