@@ -73,7 +73,8 @@ void readboard(void) {
 				}
 			}
 		}
-	last_move--; // First column is zero, not one
+	if (last_move)
+		last_move--; // First column is zero, not one
 }
 
 /**
@@ -333,38 +334,39 @@ int getTop(int column) {
 
 int bestMove() {
 	int i, best = -5, colour, temp, move, top;
-	for (i = 0; i<columns-6; i++) {
+	for (i = 0; i < columns - 6; i++) {
 		top = getTop(i);
-		if (top > rows) continue;
+		if (top > rows)
+			continue;
 		//try blue
 		getPiece(i,top) = BLUE;
 		temp = isWin(i);
-		if (temp > best) best = temp, move = i, colour = BLUE;
+		if (temp > best)
+			best = temp, move = i, colour = BLUE;
 		// Try green
 		getPiece(i,top) = GREEN;
 		temp = isWin(i);
-		if (temp > best) best = temp, move = i, colour = GREEN;
-		
+		if (temp > best)
+			best = temp, move = i, colour = GREEN;
+
 		getPiece(i,top) = SPACE;
 	}
 	// column << 1 + 0 for blue, 1 for green
 	return (move << 1) + colour - 2;
 }
 
-
-
 /**
  * Calls functions to read in board etc.
  */
 int main(void) {
-	int col, move;
-	char p;
+	//int col, move;
+	//char p;
 
 	readboard();
-	
-	move = bestMove();
-	col = (move & 62) >> 1;
-	p = pieces[(move & 1) + 2];
+
+	//move = bestMove();
+	//col = (move & 62) >> 1;
+	//p = pieces[(move & 1) + 2];
 
 	//printBoard();
 	//timeIswin(10000000);
