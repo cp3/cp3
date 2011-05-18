@@ -6,6 +6,7 @@
 #define RED		1
 #define BLUE	2
 #define GREEN	3
+#define PADDING	6
 
 // Macros
 #define getPiece(r,c) board[skipPadding + r + c * rows]
@@ -47,8 +48,8 @@ void readboard(void) {
 
 	scanf("(%d,%d,%d,%d,%d,%d", &columns, &rows, &last_move, &total_time,
 			&player_1_time, &last_move_time);
-	rows += 6; // Make board bigger for padding
-	columns += 6;
+	rows += PADDING; // Make board bigger for padding
+	columns += PADDING;
 	skipPadding = 3 * rows + 3;
 	board = (int *) calloc(sizeof(int), rows * columns); // Need to pad the board with spaces
 	for (i = 0; i < columns; i++)
@@ -92,8 +93,8 @@ void printBoard() {
 	int i, j;
 	printf("From input:\n");
 
-	for (i = 0; i < columns - 6; i++) {
-		for (j = 0; j < rows - 6; j++) {
+	for (i = 0; i < columns - PADDING; i++) {
+		for (j = 0; j < rows - PADDING; j++) {
 			printf("%c", pieces[getPiece(j,i)]);
 		}
 	}
@@ -106,7 +107,7 @@ void printBoard() {
 	}
 	printf("\n\n");
 	for (i = rows - 7; i >= 0; i--) {
-		for (j = 0; j < columns - 6; j++) {
+		for (j = 0; j < columns - PADDING; j++) {
 			printf("%c ", pieces[getPiece(i,j)]);
 		}
 		printf("\n");
@@ -334,9 +335,9 @@ int getTop(int column) {
 
 int bestMove() {
 	int i, best = -5, colour, temp, move, top;
-	for (i = 0; i < columns - 6; i++) {
+	for (i = 0; i < columns - PADDING; i++) {
 		top = getTop(i);
-		if (top > rows)
+		if (top > rows - PADDING)
 			continue;
 		//try blue
 		getPiece(i,top) = BLUE;
