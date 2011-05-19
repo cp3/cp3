@@ -7,6 +7,7 @@
 #define BLUE	2
 #define GREEN	3
 #define PADDING	6
+#define MAX_DEPTH 2
 
 // Macros
 #define getPiece(r,c) board[skipPadding + r + c * rows]
@@ -333,7 +334,70 @@ int getTop(int column) {
 	}
 }
 
-int bestMove() {
+
+
+int bestMoveBlue(int depth) {
+	int i, best = -5, colour, temp, move, top;
+	for (i = 0; i < columns - PADDING; i++) {
+		top = getTop(i);
+		if (top > rows - PADDING)
+			continue;
+		//try blue
+		getPiece(i,top) = BLUE;
+		temp = isWin(i);
+		//if there is no win, and max depth is not yet achieved
+		//check for reds move and increase depth
+		//NOTE: not sure if ++ is the right operator, might mess up the green option lower down
+		if(temp < 1 && depth < MAX_DEPTH)
+			bestMoveRed(depth + 1);
+		if (temp > best)
+			best = temp, move = i, colour = BLUE;
+		// Try green
+		getPiece(i,top) = GREEN;
+		temp = isWin(i);
+		//if there is no win, and max depth is not yet achieved
+		//check for reds move and increase depth
+		if(temp < 1 && depth < MAX_DEPTH)
+			bestMoveRed(depth + 1);
+		if (temp > best)
+			best = temp, move = i, colour = GREEN;
+
+		getPiece(i,top) = SPACE;
+	}
+	// column << 1 + 0 for blue, 1 for green
+	return (move << 1) + colour - 2;
+}
+int bestMoveRed(int depth) {
+	int i, best = -5, colour, temp, move, top;
+	for (i = 0; i < columns - PADDING; i++) {
+		top = getTop(i);
+		if (top > rows - PADDING)
+			continue;
+		//try red
+		getPiece(i,top) = RED;
+		temp = isWin(i);
+		//if temp is negative red wins
+		//if it's positive then the previous move was a good move
+		if(temp == 0 && depth < MAX_DEPTH)
+			bestMoveBlue(depth + 1);
+		if (temp > best)
+			best = temp, move = i, colour = RED;
+		else
+		// Try green
+		getPiece(i,top) = GREEN;
+		temp = isWin(i);
+		if(temp == 0 && depth < MAX_DEPTH)
+			bestMoveBlue(depth + 1);
+		if (temp > best)
+			best = temp, move = i, colour = GREEN;
+
+		getPiece(i,top) = SPACE;
+	}
+	// column << 1 + 0 for blue, 1 for green
+	return (move << 1) + colour - 2;
+}
+/*
+int bestMove(int depth) {
 	int i, best = -5, colour, temp, move, top;
 	for (i = 0; i < columns - PADDING; i++) {
 		top = getTop(i);
@@ -354,28 +418,28 @@ int bestMove() {
 	}
 	// column << 1 + 0 for blue, 1 for green
 	return (move << 1) + colour - 2;
-}
+}*/
 
 /**
  * Calls functions to read in board etc.
  */
 int main(void) {
-	//int col, move;
-	//char p;
+	int col, move;
+	char p;
 
 	readboard();
 
-	//move = bestMove();
-	//col = (move & 62) >> 1;
-	//p = pieces[(move & 1) + 2];
+	move = bestMoveBlue(0);
+	col = (move & 62) >> 1;
+	p = pieces[(move & 1) + 2];
 
-	//printBoard();
+	printBoard();
 	//timeIswin(10000000);
-	printf("%d\n", isWin(last_move));
+	//printf("%d\n", isWin(last_move));
 	//tempPrint();
 	freeboard();
 
-	//printf("(%d,%c)", col+1, p);
+	printf("(%d,%c)", col+1, p);
 
 	return 0;
 }
