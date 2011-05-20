@@ -335,67 +335,204 @@ int getTop(int column) {
 }
 
 
+int burninate() {
+	int i, top, winValue, move = -1, best = -5, colour;
+	
+	//Check to see if there is an instant win
+	for(i = 0; i < columns - PADDING; i++) {
+		top = getTop(i);
+		getPiece(top, i) = BLUE;
+		winValue = isWin(i);
+		//If there's a win and it's worth more points then
+		//the current win swap
+		if(winValue > 0 && winValue > best) {
+			move = i, best = winValue, colour = BLUE;
+			//if win is worth 5 points, end as it's worth the most
+			if(winValue == 5)
+				break;
+		}
+		getPiece(top, i) = GREEN;
+		winValue = isWin(i);
+		//If there's a win and it's worth more points then
+		//the current win swap
+		if(winValue > 0 && winValue > best) {
+			move = i, best = winValue, colour = GREEN;
+			//if win is worth 5 points, end as it's worth the most
+			if(winValue == 5)
+				break;
+		}
+		
+		getPiece(top, i) = SPACE;
+	}
 
-int bestMoveBlue(int depth) {
-	int i, best = -5, colour, temp, move, top;
+	
+	//Check for opening moves
+	//openingMovesCodeHere!
+	
+	//Check ply and a half if move has not been changed
+	if(move == -1) {
+		return getBestMove();	
+	}
+	
+	return (move << 1) + colour - 2;
+	
+}
+	
+int getBestMove() {
+	int i, j, k, best = -5, winValue, move, top, colour;
+	//Blues first turn
 	for (i = 0; i < columns - PADDING; i++) {
 		top = getTop(i);
-		if (top > rows - PADDING)
+		if (top >= (rows - PADDING))
 			continue;
-		//try blue
-		getPiece(i,top) = BLUE;
-		temp = isWin(i);
-		//if there is no win, and max depth is not yet achieved
-		//check for reds move and increase depth
-		//NOTE: not sure if ++ is the right operator, might mess up the green option lower down
-		if(temp < 1 && depth < MAX_DEPTH)
-			bestMoveRed(depth + 1);
-		if (temp > best)
-			best = temp, move = i, colour = BLUE;
-		// Try green
-		getPiece(i,top) = GREEN;
-		temp = isWin(i);
-		//if there is no win, and max depth is not yet achieved
-		//check for reds move and increase depth
-		if(temp < 1 && depth < MAX_DEPTH)
-			bestMoveRed(depth + 1);
-		if (temp > best)
-			best = temp, move = i, colour = GREEN;
-
-		getPiece(i,top) = SPACE;
+		
+		getPiece(top, i) = BLUE;
+		
+		//Reds turn
+		for(j = 0; j < columns - PADDING; j++) {
+			top = getTop(j);
+			if (top >= (rows - PADDING))
+				continue;
+			getPiece(top, j) = RED;
+			winValue = isWin(j);
+			
+			//bad move since red wins
+			if(winValue < 0) {
+				//don't take this move
+				break;
+			}
+			//Else if red did not win, check to see if Blue can win next turn
+			else{
+				//Blues 2nd turn
+				for(k = 0; k < columns - PADDING; k++) {
+					top = getTop(k);
+					if (top >= (rows - PADDING))
+						continue;
+					getPiece(top, k) = BLUE;
+					winValue = isWin(k);
+					if(winValue > -1 && winValue > best) {
+						best = winValue, move = i, colour = BLUE;
+					}
+					
+					getPiece(top, k) = GREEN;
+					winValue = isWin(k);
+					if(winValue > -1 && winValue > best) {
+						best = winValue, move = i, colour = BLUE;
+					}
+					
+					getPiece(top, k) = SPACE;
+				}
+			}
+			getPiece(top, j) = GREEN;
+			winValue = isWin(j);
+			
+			//bad move since red wins
+			if(winValue < 0) {
+				//don't take this move
+				break;
+			}
+			//Else if red did not win, check to see if Blue can win next turn
+			else{
+				//Blues 2nd turn
+				for(k = 0; k < columns - PADDING; k++) {
+					top = getTop(k);
+					if (top >= (rows - PADDING))
+						continue;
+					getPiece(top, k) = BLUE;
+					winValue = isWin(k);
+					if(winValue > -1 && winValue > best) {
+						best = winValue, move = i, colour = BLUE;
+					}
+					
+					getPiece(top, k) = GREEN;
+					winValue = isWin(k);
+					if(winValue > -1 && winValue > best) {
+						best = winValue, move = i, colour = BLUE;
+					}
+					
+					getPiece(top, k) = SPACE;
+				}
+			}
+			
+			
+			getPiece(top, j) = SPACE;
+		}
+		
+		getPiece(top, i) = GREEN;
+		
+		//Reds turn
+		for(j = 0; j < columns - PADDING; j++) {
+			top = getTop(j);
+			if (top >= (rows - PADDING))
+				continue;
+			getPiece(top, j) = RED;
+			winValue = isWin(j);
+			
+			//bad move since red wins
+			if(winValue < 0) {
+				//don't take this move
+				break;
+			}
+			//Else if red did not win, check to see if Blue can win next turn
+			else{
+				//Blues 2nd turn
+				for(k = 0; k < columns - PADDING; k++) {
+					top = getTop(k);
+					if (top >= (rows - PADDING))
+						continue;
+					getPiece(top, k) = BLUE;
+					winValue = isWin(k);
+					if(winValue > -1 && winValue > best) {
+						best = winValue, move = i, colour = GREEN;
+					}
+					
+					getPiece(top, k) = GREEN;
+					winValue = isWin(k);
+					if(winValue > -1 && winValue > best) {
+						best = winValue, move = i, colour = GREEN;
+					}
+					
+					getPiece(top, k) = SPACE;
+				}
+			}
+			getPiece(top, j) = GREEN;
+			winValue = isWin(j);
+			
+			//bad move since red wins
+			if(winValue < 0) {
+				//don't take this move
+				break;
+			}
+			//Else if red did not win, check to see if Blue can win next turn
+			else{
+				//Blues 2nd turn
+				for(k = 0; k < columns - PADDING; k++) {
+					top = getTop(k);
+					if (top >= (rows - PADDING))
+						continue;
+					getPiece(top, k) = BLUE;
+					winValue = isWin(k);
+					if(winValue > 0 && winValue > best) {
+						best = winValue, move = i, colour = GREEN;
+					}
+					
+					getPiece(top, k) = GREEN;
+					winValue = isWin(k);
+					if(winValue > 0 && winValue > best) {
+						best = winValue, move = i, colour = GREEN;
+					}
+					
+					getPiece(top, k) = SPACE;
+				}
+			}
+			
+			getPiece(top, j) = SPACE;
+		}
+		getPiece(top, i) = SPACE;
 	}
-	// column << 1 + 0 for blue, 1 for green
 	return (move << 1) + colour - 2;
 }
-int bestMoveRed(int depth) {
-	int i, best = -5, colour, temp, move, top;
-	for (i = 0; i < columns - PADDING; i++) {
-		top = getTop(i);
-		if (top > rows - PADDING)
-			continue;
-		//try red
-		getPiece(i,top) = RED;
-		temp = isWin(i);
-		//if temp is negative red wins
-		//if it's positive then the previous move was a good move
-		if(temp == 0 && depth < MAX_DEPTH)
-			bestMoveBlue(depth + 1);
-		if (temp > best)
-			best = temp, move = i, colour = RED;
-		else
-		// Try green
-		getPiece(i,top) = GREEN;
-		temp = isWin(i);
-		if(temp == 0 && depth < MAX_DEPTH)
-			bestMoveBlue(depth + 1);
-		if (temp > best)
-			best = temp, move = i, colour = GREEN;
 
-		getPiece(i,top) = SPACE;
-	}
-	// column << 1 + 0 for blue, 1 for green
-	return (move << 1) + colour - 2;
-}
 /*
 int bestMove(int depth) {
 	int i, best = -5, colour, temp, move, top;
@@ -429,11 +566,11 @@ int main(void) {
 
 	readboard();
 
-	move = bestMoveBlue(0);
+	move = burninate();
 	col = (move & 62) >> 1;
 	p = pieces[(move & 1) + 2];
 
-	printBoard();
+//	printBoard();
 	//timeIswin(10000000);
 	//printf("%d\n", isWin(last_move));
 	//tempPrint();
