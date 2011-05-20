@@ -1,0 +1,150 @@
+#!/bin/sh
+#
+# makeai groupname [srcdir [destdir [tmpdir]]]
+#
+
+# Check for the appropriate parameters
+if [ $# -eq 0 -o $# -gt 4 ]; then
+	echo "Usage: $0 groupname [srcdir [destdir [tmpdir]]]"
+	exit -1
+fi
+
+# Set the defaults
+groupname=$1
+pwdir=`pwd`
+srcdir=$pwdir
+destdir=$pwdir
+tmpdir=$pwdir/tmp
+
+# Override as required
+if [ $# -gt 1 ]; then
+	srcdir=$2
+fi
+if [ $# -gt 2 ]; then
+	destdir=$3
+fi
+if [ $# -gt 3 ]; then
+	tmpdir=$4
+fi
+
+# If required create the temporary build location
+rd=0
+if [ ! -d ${tmpdir} ]; then
+	mkdir ${tmpdir}
+	rd=1
+fi
+
+# Move into the temporary build location
+cd ${tmpdir}
+
+# Decompress the file(s)
+gzip -dcf ${srcdir}/${groupname}.tar.gz | tar xf -
+
+# Set the default build flags
+COMP=/usr/bin/gcc
+FLAGS=-O2
+FILES=*.c
+MANIF=
+
+# Override the default build flags and check for validity
+if [ -f makeinfo ]; then
+	COMP=`grep '^COMP' makeinfo | cut -d= -f2`
+	FLAGS=`grep '^FLAGS' makeinfo | cut -d= -f2,3,4,5,6,7,8,9`
+	FILES=`grep '^FILES' makeinfo | cut -d= -f2`
+	MANIF=`grep '^MANIFEST' makeinfo | cut -d= -f2`
+
+	case ${COMP} in
+		gcc) ;;
+		g++) ;;
+		gcj) ;;
+		/usr/bin/gcc) ;;
+		/usr/bin/g++) ;;
+		/usr/bin/gcj) ;;
+		java) ;;
+		*) echo "Invalid compiler!"; 
+			cd ${pwdir} 
+			if [ $rd -eq 1 ]; then 
+				/bin/rm -rf ${tmpdir}
+			fi ;;
+	esac
+
+	NF=`echo ${FLAGS} | sed -e 's/[\=\ \_A-Za-z0-9+\-]//g'`
+	if [ -n "${NF}" ]; then
+		echo "Invalid flags!"
+		cd ${pwdir}
+
+		if [ $rd -eq 1 ]; then
+			/bin/rm -rf ${tmpdir}
+		fi
+		exit 2;
+	fi
+	NF=`echo ${FILES} | sed -e 's/[\ A-Za-z0-9+\.\/\*\-]//g'`
+	if [ -n "${NF}" ]; then
+		echo "Invalid file list!"
+		cd ${pwdir}
+
+		if [ $rd -eq 1 ]; then
+			/bin/rm -rf ${tmpdir}
+		fi
+		exit 3;
+	fi
+
+	NF=`echo ${MANIF} | sed -e 's/[\ A-Za-z0-9+\.\/\*\-]//g'`
+	if [ -n "${NF}" ]; then
+		echo "Invalid manifest!"
+		cd ${pwdir}
+
+		if [ $rd -eq 1 ]; then
+			/bin/rm -rf ${tmpdir}
+		fi
+		exit 3;
+	fi
+fi
+
+# Build the executable
+if [ "${COMP}" = "java" ]; then
+	# If java, create a stand-alone java executable as follows...
+
+	# First, compile the java files into class files
+	javac ${FLAGS} ${FILES}
+
+	# Then combine the class files into a jar file and set the default
+	# class with the manifest
+	jar cm0f ${MANIF} ${groupname}.jar *.class
+
+	# Embed a uuencoded version of the jar file into a self-extracting
+	# and running script
+	cat > ${groupname} <<EOF
+#!/bin/csh
+
+# Extract and decode the jar file
+uudecode << "THISISTHEENDOFTHEFILE"
+EOF
+	uuencode ${groupname}.jar /tmp/tjf.jar >> ${groupname}
+	cat >> ${groupname} <<EOF
+"THISISTHEENDOFTHEFILE"
+
+# Run java specifying the appropriate jar file
+java -jar /tmp/tjf.jar
+
+# Clean up
+/bin/rm -f /tmp/tjf.jar
+
+EOF
+	chmod +x ${groupname}
+else
+	# If not java, compile appropriately
+	${COMP} -o ${groupname} ${FLAGS} ${FILES}
+fi
+
+# Copy the execultable to its final location
+cp ${groupname} ${destdir}
+
+# Restore the system state
+cd ${pwdir}
+
+if [ $rd -eq 1 ]; then
+	/bin/rm -rf ${tmpdir}
+fi
+
+
