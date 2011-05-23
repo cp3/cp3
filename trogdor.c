@@ -370,17 +370,17 @@ int burninate(int player, int depth) {
 		points = isWin(i);
 		remPiece(i);
 		if (points > max) {
-			max = enemy*points;
+			max = enemy * points;
 			if (points == 5) {
-				fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
 				return (5 << 6) + (i << 2) + colour;
 			}
 			if (points == 4) {
-				fprintf(stderr, "Getting 4 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 4 points with %c!\n", pieces[colour]);
 				fourMove = (4 << 6) + (i << 2) + colour;
 			}
 			if (points == 3) {
-				fprintf(stderr, "Getting 3 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 3 points with %c!\n", pieces[colour]);
 				threeMove = (3 << 6) + (i << 2) + colour;
 			}
 		}
@@ -394,20 +394,20 @@ int burninate(int player, int depth) {
 		if (columnHeight[i] >= rows - PADDING)
 			continue;
 		addPiece(i, colour);
-		points = enemy*isWin(i);
+		points = enemy * isWin(i);
 		remPiece(i);
 		if (points > max) {
 			max = points;
 			if (points == 5) {
-				fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
 				return (5 << 6) + (i << 2) + colour;
 			}
 			if (points == 4) {
-				fprintf(stderr, "Getting 4 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 4 points with %c!\n", pieces[colour]);
 				fourMove = (4 << 6) + (i << 2) + colour;
 			}
 			if (points == 3) {
-				fprintf(stderr, "Getting 3 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 3 points with %c!\n", pieces[colour]);
 				threeMove = (3 << 6) + (i << 2) + colour;
 			}
 		}
@@ -429,42 +429,55 @@ int burninate(int player, int depth) {
 			for (i = 0; i < neutralMoves[0]; i++) {
 				int col = (neutralMoves[i + 1] >> 2) & 15;
 				int p = neutralMoves[i + 1] & 3;
-				fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
+				//fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
 				addPiece(col, p);
-				if ((burninate(3 - player, depth - 1) >> 6) < 3) {
-					fprintf(stderr,"Won't lose with %d, %c\n", col, pieces[p]);
+				int opponentTurn = (burninate(3 - player, depth - 1) >> 6);
+				if (opponentTurn < 3) {
+					//fprintf(stderr,"Won't lose with %d, %c\n", col, pieces[p]);
 					nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
 					nonLosingMoves[0]++;
+				} else if (opponentTurn == 6) {
+					//it's a win!
+					remPiece(col);
+					//fprintf(stderr, "Forcing win with %d, %c\n", col, pieces[p]);
+					return (3 << 6) + neutralMoves[i + 1]; // might not be 3
 				}
 				remPiece(col);
 			}
 		} else {
+			int centre;
+			int closest = columns;
 			for (i = 0; i < neutralMoves[0]; i++) {
-				nonLosingMoves[i + 1] = neutralMoves[i + 1];
-				nonLosingMoves[0]++;
+				int current = abs((neutralMoves[i + 1] >> 2) - (columns
+						- PADDING) / 2);
+				if (current < closest) {
+					closest = current;
+					centre = neutralMoves[i + 1];
+				}
 			}
+			return centre;
 		}
 		if (nonLosingMoves[0] > 0) {
 			int centre;
 			int closest = columns;
 			for (i = 0; i < nonLosingMoves[0]; i++) {
-				int current = abs((nonLosingMoves[i + 1] >> 2)
-						- (columns - PADDING) / 2);
+				int current = abs((nonLosingMoves[i + 1] >> 2) - (columns
+						- PADDING) / 2);
 				if (current < closest) {
 					closest = current;
 					centre = nonLosingMoves[i + 1];
 				}
 			}
 			return centre;
-		} else {	//we're gonna lose now...
+		} else { //we're gonna lose now...
 			int centre;
 			int closest = columns;
 			for (i = 0; i < neutralMoves[0]; i++) {
-				int current = abs((neutralMoves[i + 1] >> 2)
-						- (columns - PADDING) / 2);
+				int current = abs((neutralMoves[i + 1] >> 2) - (columns
+						- PADDING) / 2);
 				if (current < closest) {
 					closest = current;
-					centre = neutralMoves[i + 1];
+					centre = (6 << 6) + neutralMoves[i + 1];
 				}
 			}
 			return centre;
@@ -473,7 +486,7 @@ int burninate(int player, int depth) {
 	if (max < 0) {
 		fprintf(stderr, "GONNA LOSE!!! --- FIX THIS!!!");
 	}
-	return 0;
+	return 6 << 6;
 }
 
 void addPiece(int col, int colour) {
@@ -491,14 +504,22 @@ void remPiece(int col) {
  */
 int main(void) {
 	int col, move;
+	int totMoves = 0, i;
 	char p;
 
 	readboard();
-	//printBoard();
-
-	move = burninate(BLUE, 1);
-	col = (move >> 2) & 15;
-	p = pieces[move & 3];
+	
+	for (i=0; i<columns-PADDING; i++) {
+		totMoves += columnHeight[i];
+	}
+	if (totMoves < 3) {
+		p = pieces[BLUE];
+		col = 4;
+	} else {
+		move = burninate(BLUE, 5);
+		col = (move >> 2) & 15;
+		p = pieces[move & 3];
+	}
 
 	//timeIswin(10000000);
 	//printf("%d\n", isWin(last_move));
