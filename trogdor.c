@@ -11,11 +11,18 @@
 
 // Macros
 #define getPiece(r,c) board[skipPadding + r + c * rows]
+#define boardSize(x) (x - PADDING);
 
 // Function Prototypes
 
 void readboard(void);
 void freeboard(void);
+void printboard(void);
+int getTop(int column);
+void addPiece(int col, int colour);
+void remPiece(int col);
+int burninate(int player, int depth);
+int isWin(int lastColumn);
 
 // Global variables
 int *board;
@@ -26,6 +33,7 @@ int total_time;
 int player_1_time;
 int last_move_time;
 int skipPadding;
+int *columnHeight;
 char pieces[4] = { 's', 'r', 'b', 'g' };
 int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -49,6 +57,7 @@ void readboard(void) {
 
 	scanf("(%d,%d,%d,%d,%d,%d", &columns, &rows, &last_move, &total_time,
 			&player_1_time, &last_move_time);
+	columnHeight = (int *) calloc(sizeof(int), columns);
 	rows += PADDING; // Make board bigger for padding
 	columns += PADDING;
 	skipPadding = 3 * rows + 3;
@@ -65,12 +74,15 @@ void readboard(void) {
 					board[i * rows + j] = SPACE;
 					break;
 				case 'r':
+					columnHeight[i - 3] = j - 2;
 					board[i * rows + j] = RED;
 					break;
 				case 'b':
+					columnHeight[i - 3] = j - 2;
 					board[i * rows + j] = BLUE;
 					break;
 				case 'g':
+					columnHeight[i - 3] = j - 2;
 					board[i * rows + j] = GREEN;
 				}
 			}
@@ -84,6 +96,7 @@ void readboard(void) {
  */
 void freeboard(void) {
 	free(board);
+	free(columnHeight);
 }
 
 /**
@@ -99,14 +112,18 @@ void printBoard() {
 			printf("%c", pieces[getPiece(j,i)]);
 		}
 	}
-	printf("\n\n");
-	for (i = rows - 1; i >= 0; i--) {
-		for (j = 0; j < columns; j++) {
-			printf("%c ", pieces[board[i + j * rows]]);
-		}
-		printf("\n");
+	printf("\nTop Pieces:\n");
+	for (i = 0; i < columns - PADDING; i++) {
+		printf("%d ", columnHeight[i]);
 	}
 	printf("\n\n");
+	/*for (i = rows - 1; i >= 0; i--) {
+	 for (j = 0; j < columns; j++) {
+	 printf("%c ", pieces[board[i + j * rows]]);
+	 }
+	 printf("\n");
+	 }
+	 printf("\n\n");*/
 	for (i = rows - 7; i >= 0; i--) {
 		for (j = 0; j < columns - PADDING; j++) {
 			printf("%c ", pieces[getPiece(i,j)]);
@@ -264,65 +281,65 @@ int isWin(int lastColumn) {
 	return 0;
 }
 
-void timeIswin(int times) {
-	int i;
-	clock_t t1, t2;
-	t1 = clock();
+/*void timeIswin(int times) {
+ int i;
+ clock_t t1, t2;
+ t1 = clock();
 
-	// loop until t2 gets a different value
-	for (i = 0; i < times; i++)
-		isWin(last_move);
+ // loop until t2 gets a different value
+ for (i = 0; i < times; i++)
+ isWin(last_move);
 
-	t2 = clock();
+ t2 = clock();
 
-	printf("Ran isWin() %d times in %f s.\n", times, (double) (t2 - t1)
-			/ CLOCKS_PER_SEC);
-	printf("Average time %f µs.\n", (double) (t2 - t1) / CLOCKS_PER_SEC
-			* 1000000 / (double) times);
-}
+ printf("Ran isWin() %d times in %f s.\n", times, (double) (t2 - t1)
+ / CLOCKS_PER_SEC);
+ printf("Average time %f µs.\n", (double) (t2 - t1) / CLOCKS_PER_SEC
+ * 1000000 / (double) times);
+ }*/
 
 // Prints out the array that defines points for piece combinations
 // Points set out as 0000 0000 blue 0000 0000 red
-void tempPrint() {
-	int i, a, b, c, d, val;
-	printf("int points[256] = { ");
-	for (i = 0; i < 256; i++) {
-		val = 0;
-		a = i & 3;
-		b = (i & 12) >> 2;
-		c = (i & 48) >> 4;
-		d = (i & 192) >> 6;
-		if (a == 1 && b == 1 && c == 3 && d == 3)
-			val = 5;
-		if (a == 3 && b == 3 && c == 1 && d == 1)
-			val = 5;
-		if (a == 2 && b == 2 && c == 3 && d == 3)
-			val = 5 << 8;
-		if (a == 3 && b == 3 && c == 2 && d == 2)
-			val = 5 << 8;
+/*void tempPrint() {
+ int i, a, b, c, d, val;
+ printf("int points[256] = { ");
+ for (i = 0; i < 256; i++) {
+ val = 0;
+ a = i & 3;
+ b = (i & 12) >> 2;
+ c = (i & 48) >> 4;
+ d = (i & 192) >> 6;
+ if (a == 1 && b == 1 && c == 3 && d == 3)
+ val = 5;
+ if (a == 3 && b == 3 && c == 1 && d == 1)
+ val = 5;
+ if (a == 2 && b == 2 && c == 3 && d == 3)
+ val = 5 << 8;
+ if (a == 3 && b == 3 && c == 2 && d == 2)
+ val = 5 << 8;
 
-		if (a == 1 && b == 3 && c == 3 && d == 1)
-			val = 4;
-		if (a == 3 && b == 1 && c == 1 && d == 3)
-			val = 4;
-		if (a == 2 && b == 3 && c == 3 && d == 2)
-			val = 4 << 8;
-		if (a == 3 && b == 2 && c == 2 && d == 3)
-			val = 4 << 8;
+ if (a == 1 && b == 3 && c == 3 && d == 1)
+ val = 4;
+ if (a == 3 && b == 1 && c == 1 && d == 3)
+ val = 4;
+ if (a == 2 && b == 3 && c == 3 && d == 2)
+ val = 4 << 8;
+ if (a == 3 && b == 2 && c == 2 && d == 3)
+ val = 4 << 8;
 
-		if (a == 1 && b == 3 && c == 1 && d == 3)
-			val = 3;
-		if (a == 3 && b == 1 && c == 3 && d == 1)
-			val = 3;
-		if (a == 2 && b == 3 && c == 2 && d == 3)
-			val = 3 << 8;
-		if (a == 3 && b == 2 && c == 3 && d == 2)
-			val = 3 << 8;
+ if (a == 1 && b == 3 && c == 1 && d == 3)
+ val = 3;
+ if (a == 3 && b == 1 && c == 3 && d == 1)
+ val = 3;
+ if (a == 2 && b == 3 && c == 2 && d == 3)
+ val = 3 << 8;
+ if (a == 3 && b == 2 && c == 3 && d == 2)
+ val = 3 << 8;
 
-		printf("%d, ", val);
-	}
-	printf("};");
-}
+ printf("%d, ", val);
+ }
+ printf("};");
+ }*/
 
 int getTop(int column) {
 	int top, i;
@@ -334,249 +351,182 @@ int getTop(int column) {
 	}
 }
 
-
-int burninate() {
-	int i, top, winValue, move = -1, best = -5, colour;
-	
-	//Check to see if there is an instant win
-	for(i = 0; i < columns - PADDING; i++) {
-		top = getTop(i);
-		getPiece(top, i) = BLUE;
-		winValue = isWin(i);
-		//If there's a win and it's worth more points then
-		//the current win swap
-		if(winValue > 0 && winValue > best) {
-			move = i, best = winValue, colour = BLUE;
-			//if win is worth 5 points, end as it's worth the most
-			if(winValue == 5)
-				break;
-		}
-		getPiece(top, i) = GREEN;
-		winValue = isWin(i);
-		//If there's a win and it's worth more points then
-		//the current win swap
-		if(winValue > 0 && winValue > best) {
-			move = i, best = winValue, colour = GREEN;
-			//if win is worth 5 points, end as it's worth the most
-			if(winValue == 5)
-				break;
-		}
-		
-		getPiece(top, i) = SPACE;
+int burninate(int player, int depth) {
+	int i, points, colour;
+	int fourMove;
+	int threeMove;
+	int neutralMoves[21];
+	int enemy = 1;
+	if (player == RED) {
+		enemy = -1;
 	}
-
-	
-	//Check for opening moves
-	//openingMovesCodeHere!
-	
-	//Check ply and a half if move has not been changed
-	if(move == -1) {
-		return getBestMove();	
-	}
-	
-	return (move << 1) + colour - 2;
-	
-}
-	
-int getBestMove() {
-	int i, j, k, best = -5, winValue, move, top, colour;
-	//Blues first turn
+	neutralMoves[0] = 0;
+	int max = -5;
+	colour = player;
 	for (i = 0; i < columns - PADDING; i++) {
-		top = getTop(i);
-		if (top >= (rows - PADDING))
+		if (columnHeight[i] >= rows - PADDING)
 			continue;
-		
-		getPiece(top, i) = BLUE;
-		
-		//Reds turn
-		for(j = 0; j < columns - PADDING; j++) {
-			top = getTop(j);
-			if (top >= (rows - PADDING))
-				continue;
-			getPiece(top, j) = RED;
-			winValue = isWin(j);
-			
-			//bad move since red wins
-			if(winValue < 0) {
-				//don't take this move
-				break;
+		addPiece(i, colour);
+		points = isWin(i);
+		remPiece(i);
+		if (points > max) {
+			max = enemy * points;
+			if (points == 5) {
+				//fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
+				return (5 << 6) + (i << 2) + colour;
 			}
-			//Else if red did not win, check to see if Blue can win next turn
-			else{
-				//Blues 2nd turn
-				for(k = 0; k < columns - PADDING; k++) {
-					top = getTop(k);
-					if (top >= (rows - PADDING))
-						continue;
-					getPiece(top, k) = BLUE;
-					winValue = isWin(k);
-					if(winValue > -1 && winValue > best) {
-						best = winValue, move = i, colour = BLUE;
-					}
-					
-					getPiece(top, k) = GREEN;
-					winValue = isWin(k);
-					if(winValue > -1 && winValue > best) {
-						best = winValue, move = i, colour = BLUE;
-					}
-					
-					getPiece(top, k) = SPACE;
-				}
+			if (points == 4) {
+				//fprintf(stderr, "Getting 4 points with %c!\n", pieces[colour]);
+				fourMove = (4 << 6) + (i << 2) + colour;
 			}
-			getPiece(top, j) = GREEN;
-			winValue = isWin(j);
-			
-			//bad move since red wins
-			if(winValue < 0) {
-				//don't take this move
-				break;
+			if (points == 3) {
+				//fprintf(stderr, "Getting 3 points with %c!\n", pieces[colour]);
+				threeMove = (3 << 6) + (i << 2) + colour;
 			}
-			//Else if red did not win, check to see if Blue can win next turn
-			else{
-				//Blues 2nd turn
-				for(k = 0; k < columns - PADDING; k++) {
-					top = getTop(k);
-					if (top >= (rows - PADDING))
-						continue;
-					getPiece(top, k) = BLUE;
-					winValue = isWin(k);
-					if(winValue > -1 && winValue > best) {
-						best = winValue, move = i, colour = BLUE;
-					}
-					
-					getPiece(top, k) = GREEN;
-					winValue = isWin(k);
-					if(winValue > -1 && winValue > best) {
-						best = winValue, move = i, colour = BLUE;
-					}
-					
-					getPiece(top, k) = SPACE;
-				}
-			}
-			
-			
-			getPiece(top, j) = SPACE;
 		}
-		
-		getPiece(top, i) = GREEN;
-		
-		//Reds turn
-		for(j = 0; j < columns - PADDING; j++) {
-			top = getTop(j);
-			if (top >= (rows - PADDING))
-				continue;
-			getPiece(top, j) = RED;
-			winValue = isWin(j);
-			
-			//bad move since red wins
-			if(winValue < 0) {
-				//don't take this move
-				break;
-			}
-			//Else if red did not win, check to see if Blue can win next turn
-			else{
-				//Blues 2nd turn
-				for(k = 0; k < columns - PADDING; k++) {
-					top = getTop(k);
-					if (top >= (rows - PADDING))
-						continue;
-					getPiece(top, k) = BLUE;
-					winValue = isWin(k);
-					if(winValue > -1 && winValue > best) {
-						best = winValue, move = i, colour = GREEN;
-					}
-					
-					getPiece(top, k) = GREEN;
-					winValue = isWin(k);
-					if(winValue > -1 && winValue > best) {
-						best = winValue, move = i, colour = GREEN;
-					}
-					
-					getPiece(top, k) = SPACE;
-				}
-			}
-			getPiece(top, j) = GREEN;
-			winValue = isWin(j);
-			
-			//bad move since red wins
-			if(winValue < 0) {
-				//don't take this move
-				break;
-			}
-			//Else if red did not win, check to see if Blue can win next turn
-			else{
-				//Blues 2nd turn
-				for(k = 0; k < columns - PADDING; k++) {
-					top = getTop(k);
-					if (top >= (rows - PADDING))
-						continue;
-					getPiece(top, k) = BLUE;
-					winValue = isWin(k);
-					if(winValue > 0 && winValue > best) {
-						best = winValue, move = i, colour = GREEN;
-					}
-					
-					getPiece(top, k) = GREEN;
-					winValue = isWin(k);
-					if(winValue > 0 && winValue > best) {
-						best = winValue, move = i, colour = GREEN;
-					}
-					
-					getPiece(top, k) = SPACE;
-				}
-			}
-			
-			getPiece(top, j) = SPACE;
+		if (points == 0) {
+			neutralMoves[neutralMoves[0] + 1] = (i << 2) + colour;
+			neutralMoves[0]++;
 		}
-		getPiece(top, i) = SPACE;
 	}
-	return (move << 1) + colour - 2;
+	colour = GREEN;
+	for (i = 0; i < columns - PADDING; i++) {
+		if (columnHeight[i] >= rows - PADDING)
+			continue;
+		addPiece(i, colour);
+		points = enemy * isWin(i);
+		remPiece(i);
+		if (points > max) {
+			max = points;
+			if (points == 5) {
+				//fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
+				return (5 << 6) + (i << 2) + colour;
+			}
+			if (points == 4) {
+				//fprintf(stderr, "Getting 4 points with %c!\n", pieces[colour]);
+				fourMove = (4 << 6) + (i << 2) + colour;
+			}
+			if (points == 3) {
+				//fprintf(stderr, "Getting 3 points with %c!\n", pieces[colour]);
+				threeMove = (3 << 6) + (i << 2) + colour;
+			}
+		}
+		if (points == 0) {
+			neutralMoves[neutralMoves[0] + 1] = (i << 2) + colour;
+			neutralMoves[0]++;
+		}
+	}
+	if (max == 4) {
+		return fourMove;
+	}
+	if (max == 3) {
+		return threeMove;
+	}
+	if (max == 0) {
+		int nonLosingMoves[21];
+		nonLosingMoves[0] = 0;
+		if (depth > 0) {
+			for (i = 0; i < neutralMoves[0]; i++) {
+				int col = (neutralMoves[i + 1] >> 2) & 15;
+				int p = neutralMoves[i + 1] & 3;
+				//fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
+				addPiece(col, p);
+				int opponentTurn = (burninate(3 - player, depth - 1) >> 6);
+				if (opponentTurn < 3) {
+					//fprintf(stderr,"Won't lose with %d, %c\n", col, pieces[p]);
+					nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
+					nonLosingMoves[0]++;
+				} else if (opponentTurn == 6) {
+					//it's a win!
+					remPiece(col);
+					//fprintf(stderr, "Forcing win with %d, %c\n", col, pieces[p]);
+					return (3 << 6) + neutralMoves[i + 1]; // might not be 3
+				}
+				remPiece(col);
+			}
+		} else {
+			int centre;
+			int closest = columns;
+			for (i = 0; i < neutralMoves[0]; i++) {
+				int current = abs((neutralMoves[i + 1] >> 2) - (columns
+						- PADDING) / 2);
+				if (current < closest) {
+					closest = current;
+					centre = neutralMoves[i + 1];
+				}
+			}
+			return centre;
+		}
+		if (nonLosingMoves[0] > 0) {
+			int centre;
+			int closest = columns;
+			for (i = 0; i < nonLosingMoves[0]; i++) {
+				int current = abs((nonLosingMoves[i + 1] >> 2) - (columns
+						- PADDING) / 2);
+				if (current < closest) {
+					closest = current;
+					centre = nonLosingMoves[i + 1];
+				}
+			}
+			return centre;
+		} else { //we're gonna lose now...
+			int centre;
+			int closest = columns;
+			for (i = 0; i < neutralMoves[0]; i++) {
+				int current = abs((neutralMoves[i + 1] >> 2) - (columns
+						- PADDING) / 2);
+				if (current < closest) {
+					closest = current;
+					centre = (6 << 6) + neutralMoves[i + 1];
+				}
+			}
+			return centre;
+		}
+	}
+	if (max < 0) {
+		fprintf(stderr, "GONNA LOSE!!! --- FIX THIS!!!");
+	}
+	return 6 << 6;
 }
 
-/*
-int bestMove(int depth) {
-	int i, best = -5, colour, temp, move, top;
-	for (i = 0; i < columns - PADDING; i++) {
-		top = getTop(i);
-		if (top > rows - PADDING)
-			continue;
-		//try blue
-		getPiece(i,top) = BLUE;
-		temp = isWin(i);
-		if (temp > best)
-			best = temp, move = i, colour = BLUE;
-		// Try green
-		getPiece(i,top) = GREEN;
-		temp = isWin(i);
-		if (temp > best)
-			best = temp, move = i, colour = GREEN;
+void addPiece(int col, int colour) {
+	getPiece(columnHeight[col],col) = colour;
+	columnHeight[col]++;
+}
 
-		getPiece(i,top) = SPACE;
-	}
-	// column << 1 + 0 for blue, 1 for green
-	return (move << 1) + colour - 2;
-}*/
+void remPiece(int col) {
+	getPiece(columnHeight[col]-1,col) = SPACE;
+	columnHeight[col]--;
+}
 
 /**
  * Calls functions to read in board etc.
  */
 int main(void) {
 	int col, move;
+	int totMoves = 0, i;
 	char p;
 
 	readboard();
+	
+	for (i=0; i<columns-PADDING; i++) {
+		totMoves += columnHeight[i];
+	}
+	if (totMoves < 3) {
+		p = pieces[BLUE];
+		col = 4;
+	} else {
+		move = burninate(BLUE, 5);
+		col = (move >> 2) & 15;
+		p = pieces[move & 3];
+	}
 
-	move = burninate();
-	col = (move & 62) >> 1;
-	p = pieces[(move & 1) + 2];
-
-//	printBoard();
 	//timeIswin(10000000);
 	//printf("%d\n", isWin(last_move));
 	//tempPrint();
 	freeboard();
 
-	printf("(%d,%c)", col+1, p);
+	printf("(%d,%c)", col + 1, p);
 
 	return 0;
 }
