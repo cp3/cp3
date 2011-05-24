@@ -629,7 +629,7 @@ int main(void) {
 	char p;
 
 	readboard();
-	printBoard();
+	//printBoard();
 
 	for (i = 0; i < columns - PADDING; i++) {
 		totMoves += columnHeight[i];
