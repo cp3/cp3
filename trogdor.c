@@ -517,18 +517,18 @@ int burninate(int player, int depth, int origDepth) {
 				int opponentTurn = (burninate(3 - player, depth - 1, origDepth)
 						>> 6);
 				if (opponentTurn < 3) {
-					if (original)
-						fprintf(stderr,
-								"Won't lose with %d, %c\nIs almost win: %d\n",
-								col, pieces[p], isAlmostWin(col));
+//					if (original)
+//						fprintf(stderr,
+//								"Won't lose with %d, %c\nIs almost win: %d\n",
+//								col, pieces[p], isAlmostWin(col));
 					nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
 					nonLosingMoves[0]++;
 				} else if (opponentTurn == 6) {
 					//it's a win!
 					remPiece(col);
-					if (original)
-						fprintf(stderr, "Forcing win with %d, %c\n", col,
-								pieces[p]);
+//					if (original)
+//						fprintf(stderr, "Forcing win with %d, %c\n", col,
+//								pieces[p]);
 					return (3 << 6) + neutralMoves[i + 1]; // might not be 3
 				}
 				remPiece(col);
@@ -549,9 +549,9 @@ int burninate(int player, int depth, int origDepth) {
 					closest = current;
 					best = score;
 					centre = nonLosingMoves[i + 1];
-					if (original)
-						fprintf(stderr, "Best score is %d with %d, %c\n", best, col,
-								pieces[p]);
+//					if (original)
+//						fprintf(stderr, "Best score is %d with %d, %c\n", best, col,
+//								pieces[p]);
 				}
 				remPiece(col);
 			}
@@ -573,9 +573,9 @@ int burninate(int player, int depth, int origDepth) {
 					closest = current;
 					best = score;
 					centre = nonLosingMoves[i + 1];
-					if (original)
-						fprintf(stderr, "Best score is %d with %d, %c\n", best, col,
-								pieces[p]);
+//					if (original)
+//						fprintf(stderr, "Best score is %d with %d, %c\n", best, col,
+//								pieces[p]);
 				}
 				remPiece(col);
 			}
@@ -594,9 +594,9 @@ int burninate(int player, int depth, int origDepth) {
 			return centre;
 		}
 	}
-	if (max < 0) {
-		fprintf(stderr, "GONNA LOSE!!! --- FIX THIS!!!");
-	}
+//	if (max < 0) {
+//		fprintf(stderr, "GONNA LOSE!!! --- FIX THIS!!!");
+//	}
 	return 6 << 6;
 }
 
