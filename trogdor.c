@@ -157,14 +157,8 @@ int isWin(int lastColumn) {
 	unsigned int redPoints = 0, bluePoints = 0, best = 0;
 	//possible wins, values from -5 to 5
 	unsigned int possible[13], winPoints;
-	// Find height of last piece played, may hit padding
-	for (i = 0;; i++) {
-		//printf("%d ",board[i+lastColumn*rows]);
-		if (getPiece(i,lastColumn) == SPACE) {
-			lastRow = i - 1;
-			break;
-		}
-	}
+	// Find height of last piece played
+	lastRow = getTop(lastColumn) - 1;
 	//printf("last piece played at (%d,%d)\n", lastColumn, lastRow);
 	//printf("Total of %d columns, %d rows\n", columns, rows);
 	// Find boundaries to search, row 0 is bottom row, column 0 is left column
@@ -299,20 +293,14 @@ int isWin(int lastColumn) {
  * Negative values are points for the other team.
  */
 int isAlmostWin(int lastColumn) {
-	int i, a, b, c, d;
+	int a, b, c, d;
 	int lastRow;
 	int left, right, top, bot;
 	unsigned int redPoints = 0, bluePoints = 0;
 	//possible wins, values from -5 to 5
 	unsigned int possible[13], winPoints;
-	// Find height of last piece played, may hit padding
-	for (i = 0;; i++) {
-		//printf("%d ",board[i+lastColumn*rows]);
-		if (getPiece(i,lastColumn) == SPACE) {
-			lastRow = i - 1;
-			break;
-		}
-	}
+	// Find height of last piece played
+	lastRow = getTop(lastColumn) - 1;
 	//printf("last piece played at (%d,%d)\n", lastColumn, lastRow);
 	//printf("Total of %d columns, %d rows\n", columns, rows);
 	// Find boundaries to search, row 0 is bottom row, column 0 is left column
@@ -518,25 +506,25 @@ unsigned int burninate(int player, int depth, int origDepth) {
 						& 448) >> 6;
 				remPiece(col);
 				opponentTurn = opponentTurn;
-//				fprintf(stderr,"%d",opponentTurn);
-//				fprintf(stderr,
-//						"with %d, %c\nOpponent turn: %d\nIs almost win: %d\n",
-//						col, pieces[p], opponentTurn);
+				//				fprintf(stderr,"%d",opponentTurn);
+				//				fprintf(stderr,
+				//						"with %d, %c\nOpponent turn: %d\nIs almost win: %d\n",
+				//						col, pieces[p], opponentTurn);
 				if (opponentTurn < 3 || opponentTurn == 7) {
 					nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
 					nonLosingMoves[0]++;
-//					if (original) {
-//						fprintf(
-//								stderr,
-//								"Won't lose with %d, %c\nOpponent turn: %d\nIs almost win: %d\n",
-//								col, pieces[p], opponentTurn, isAlmostWin(col));
-//					}
+					//					if (original) {
+					//						fprintf(
+					//								stderr,
+					//								"Won't lose with %d, %c\nOpponent turn: %d\nIs almost win: %d\n",
+					//								col, pieces[p], opponentTurn, isAlmostWin(col));
+					//					}
 
 				} else if (opponentTurn == 6) {
 					//it's a win!
-//					if (original)
-//						fprintf(stderr, "Forcing win with %d, %c\n", col,
-//								pieces[p]);
+					//					if (original)
+					//						fprintf(stderr, "Forcing win with %d, %c\n", col,
+					//								pieces[p]);
 					return (3 << 6) + neutralMoves[i + 1]; // might not be 3
 				}
 
@@ -558,9 +546,9 @@ unsigned int burninate(int player, int depth, int origDepth) {
 					closest = current;
 					best = score;
 					centre = nonLosingMoves[i + 1];
-//					if (original)
-//						fprintf(stderr, "Best score is %d with %d, %c\n", best,
-//								col, pieces[p]);
+					//					if (original)
+					//						fprintf(stderr, "Best score is %d with %d, %c\n", best,
+					//								col, pieces[p]);
 				}
 
 			}
@@ -583,9 +571,9 @@ unsigned int burninate(int player, int depth, int origDepth) {
 					closest = current;
 					best = score;
 					centre = nonLosingMoves[i + 1];
-//					if (original)
-//						fprintf(stderr, "Best score is %d with %d, %c\n", best,
-//								col, pieces[p]);
+					//					if (original)
+					//						fprintf(stderr, "Best score is %d with %d, %c\n", best,
+					//								col, pieces[p]);
 				}
 
 			}
