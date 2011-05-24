@@ -21,7 +21,7 @@ void printboard(void);
 int getTop(int column);
 void addPiece(int col, int colour);
 void remPiece(int col);
-int burninate(int player, int depth, int origDepth);
+unsigned int burninate(int player, int depth, int origDepth);
 int isWin(int lastColumn);
 
 // Global variables
@@ -430,11 +430,11 @@ int getTop(int column) {
 	}
 }
 
-int burninate(int player, int depth, int origDepth) {
+unsigned int burninate(int player, int depth, int origDepth) {
 	int i, points, colour;
-	int fourMove;
-	int threeMove;
-	int neutralMoves[21];
+	unsigned int fourMove;
+	unsigned int threeMove;
+	unsigned int neutralMoves[21];
 	int enemy = 1;
 	//printBoard();
 	if (player == RED) {
@@ -447,12 +447,12 @@ int burninate(int player, int depth, int origDepth) {
 		if (columnHeight[i] >= rows - PADDING)
 			continue;
 		addPiece(i, colour);
-		points = isWin(i);
+		points = enemy * isWin(i);
 		remPiece(i);
 		if (points > max) {
-			max = enemy * points;
+			max = points;
 			if (points == 5) {
-				//fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 5 points with %c!\n%d\n", pieces[colour], (5 << 6) + (i << 2) + colour);
 				return (5 << 6) + (i << 2) + colour;
 			}
 			if (points == 4) {
@@ -479,7 +479,7 @@ int burninate(int player, int depth, int origDepth) {
 		if (points > max) {
 			max = points;
 			if (points == 5) {
-				//fprintf(stderr, "Getting 5 points with %c!\n", pieces[colour]);
+				//fprintf(stderr, "Getting 5 points with %c!\n%d\n", pieces[colour], (5 << 6) + (i << 2) + colour);
 				return (5 << 6) + (i << 2) + colour;
 			}
 			if (points == 4) {
@@ -515,23 +515,31 @@ int burninate(int player, int depth, int origDepth) {
 				//fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
 				addPiece(col, p);
 				int opponentTurn = (burninate(3 - player, depth - 1, origDepth)
-						>> 6);
-				if (opponentTurn < 3) {
-//					if (original)
-//						fprintf(stderr,
-//								"Won't lose with %d, %c\nIs almost win: %d\n",
-//								col, pieces[p], isAlmostWin(col));
+						& 448) >> 6;
+				remPiece(col);
+				opponentTurn = opponentTurn;
+//				fprintf(stderr,"%d",opponentTurn);
+//				fprintf(stderr,
+//						"with %d, %c\nOpponent turn: %d\nIs almost win: %d\n",
+//						col, pieces[p], opponentTurn);
+				if (opponentTurn < 3 || opponentTurn == 7) {
 					nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
 					nonLosingMoves[0]++;
+//					if (original) {
+//						fprintf(
+//								stderr,
+//								"Won't lose with %d, %c\nOpponent turn: %d\nIs almost win: %d\n",
+//								col, pieces[p], opponentTurn, isAlmostWin(col));
+//					}
+
 				} else if (opponentTurn == 6) {
 					//it's a win!
-					remPiece(col);
 //					if (original)
 //						fprintf(stderr, "Forcing win with %d, %c\n", col,
 //								pieces[p]);
 					return (3 << 6) + neutralMoves[i + 1]; // might not be 3
 				}
-				remPiece(col);
+
 			}
 		} else {
 			int centre;
@@ -542,6 +550,7 @@ int burninate(int player, int depth, int origDepth) {
 				int p = nonLosingMoves[i + 1] & 3;
 				addPiece(col, p);
 				int score = isAlmostWin(col);
+				remPiece(col);
 				int current = abs((nonLosingMoves[i + 1] >> 2) - (columns
 						- PADDING) / 2);
 
@@ -550,10 +559,10 @@ int burninate(int player, int depth, int origDepth) {
 					best = score;
 					centre = nonLosingMoves[i + 1];
 //					if (original)
-//						fprintf(stderr, "Best score is %d with %d, %c\n", best, col,
-//								pieces[p]);
+//						fprintf(stderr, "Best score is %d with %d, %c\n", best,
+//								col, pieces[p]);
 				}
-				remPiece(col);
+
 			}
 			return centre;
 		}
@@ -566,6 +575,7 @@ int burninate(int player, int depth, int origDepth) {
 				int p = nonLosingMoves[i + 1] & 3;
 				addPiece(col, p);
 				int score = isAlmostWin(col);
+				remPiece(col);
 				int current = abs((nonLosingMoves[i + 1] >> 2) - (columns
 						- PADDING) / 2);
 
@@ -574,10 +584,10 @@ int burninate(int player, int depth, int origDepth) {
 					best = score;
 					centre = nonLosingMoves[i + 1];
 //					if (original)
-//						fprintf(stderr, "Best score is %d with %d, %c\n", best, col,
-//								pieces[p]);
+//						fprintf(stderr, "Best score is %d with %d, %c\n", best,
+//								col, pieces[p]);
 				}
-				remPiece(col);
+
 			}
 			return centre;
 		} else { //we're gonna lose now...
@@ -594,9 +604,9 @@ int burninate(int player, int depth, int origDepth) {
 			return centre;
 		}
 	}
-//	if (max < 0) {
-//		fprintf(stderr, "GONNA LOSE!!! --- FIX THIS!!!");
-//	}
+	//	if (max < 0) {
+	//		fprintf(stderr, "GONNA LOSE!!! --- FIX THIS!!!");
+	//	}
 	return 6 << 6;
 }
 
@@ -619,6 +629,7 @@ int main(void) {
 	char p;
 
 	readboard();
+	printBoard();
 
 	for (i = 0; i < columns - PADDING; i++) {
 		totMoves += columnHeight[i];
