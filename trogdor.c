@@ -12,6 +12,11 @@
 // Macros
 #define getPiece(r,c) board[skipPadding + r + c * rows]
 #define boardSize(x) (x - PADDING);
+#define setReturnVal(future,score,column,piece) ((future << 10) + (score << 6) + (column << 2) + piece);
+#define getFuture(x)((x >> 10) & 15);
+#define getScore(x) ((x >> 6) & 15);
+#define getColumn(x) ((x >> 2) & 15);
+#define getPiece(x) (x & 3);
 
 // Function Prototypes
 
@@ -618,6 +623,21 @@ void addPiece(int col, int colour) {
 void remPiece(int col) {
 	getPiece(columnHeight[col]-1,col) = SPACE;
 	columnHeight[col]--;
+}
+
+void testMacros() {
+	int future,score,column,piece;
+	for (future = 0; future < 16; future ++) {
+		for (score = 0; score < 16; score ++) {
+			for (column = 0; column < 16; column ++) {
+				for (piece = 0; piece < 4; piece ++) {
+					int x = setReturnVal(future,score,column,piece);
+					printf("Correct:\nfuture%d\nscore%d\ncolumn%d\npiece%d\n\n",future,score,column,piece);
+					printf("Macro:\nfuture%d\nscore%d\ncolumn%d\npiece%d\n\n",getFuture(x),getScore(x),getColumn(x),getPiece(x));
+				}
+			}
+		}
+	}
 }
 
 /**
