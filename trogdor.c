@@ -23,7 +23,7 @@
 void readboard(void);
 void freeboard(void);
 void printboard(void);
-void printWin(int distance);
+void printWin(void);
 int getTop(int column);
 void addPiece(int col, int colour);
 void remPiece(int col);
@@ -256,7 +256,8 @@ int isWin(int lastColumn) {
 			for (i = 0; i < 13; i++) {
 				if ((possible[i] & 255) > best) {
 					best = possible[i] & 255;
-					if (best == 5) break;
+					if (best == 5)
+						break;
 				}
 			}
 			return 0 - best;
@@ -266,7 +267,8 @@ int isWin(int lastColumn) {
 			for (i = 0; i < 13; i++) {
 				if ((possible[i] & 65280) >> 8 > best) {
 					best = (possible[i] & 65280) >> 8;
-					if (best == 5) break;
+					if (best == 5)
+						break;
 				}
 			}
 			return best;
@@ -411,6 +413,7 @@ int burninate(int player, int depth, int origDepth) {
 	int i, points, colour, future;
 	int fourMove;
 	int threeMove;
+	int otherMove;
 	int neutralMoves[21];
 	int enemy = 1;
 	int max = -6;
@@ -474,98 +477,98 @@ int burninate(int player, int depth, int origDepth) {
 			neutralMoves[0]++;
 		}
 	}
+	int bestLoss = 6;
+	int farLoss = 0;
+	int loss;
+
+	otherMove = neutralMoves[1];
+	int nonLosingMoves[21];
+	nonLosingMoves[0] = 0;
+
+	if (depth > 0) {
+		for (i = 0; i < neutralMoves[0]; i++) {
+			int col = getColumn(neutralMoves[i + 1]);
+			int p = getPlayed(neutralMoves[i + 1]);
+			//fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
+			addPiece(col, p);
+			int opponentTurn = burninate(3 - player, depth - 1, origDepth);
+			int opponentScore = getScore(opponentTurn);
+			remPiece(col);
+
+			if (opponentScore < 3) {
+				nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
+				nonLosingMoves[0]++;
+
+			} else if (opponentScore > 5) {
+				//it's a win!
+				points = opponentScore - 3;
+				if (points > max) {
+					max = points;
+					if (points == 5) {
+						return setReturnVal(getFuture(opponentTurn),5,col,p);
+					}
+					if (points == 4) {
+						fourMove = setReturnVal(future,4,col,p);
+					}
+					if (points == 3) {
+						threeMove = setReturnVal(future,3,col,p);
+					}
+				}
+			} else if (opponentScore > 0) {
+				//it's a loss!
+				if ((opponentScore <= bestLoss && getFuture(opponentTurn) >= farLoss) || getFuture(opponentTurn) > farLoss) {
+					bestLoss = opponentScore;
+					farLoss = getFuture(opponentTurn);
+					loss = setReturnVal(getFuture(opponentTurn),opponentScore+3,col,p);
+					//
+				}
+			}
+
+		}
+	}
+	if (nonLosingMoves[0] > 0) {
+		if (original) {
+			int centre;
+			int centreX = boardSize(columns) / 2;
+			int centreY = boardSize(rows) / 2;
+			int closest = boardSize(columns);
+			int best = -5;
+			for (i = 0; i < nonLosingMoves[0]; i++) {
+				int col = getColumn(nonLosingMoves[i + 1]);
+				int p = getPlayed(nonLosingMoves[i + 1]);
+				addPiece(col, p);
+				int score = enemy * isAlmostWin(col);
+				int row = columnHeight[col];
+				if (p == GREEN)
+					score -= 1;
+				remPiece(col);
+				int current = abs(col - centreX) + 2 * abs(row - centreY);
+
+				if (score > best || (score >= best && current < closest)) {
+					//fprintf(stderr, "2Best score is %d with %d, %c\nCurrent: %d, Closest %d\n", best, col, pieces[p], current, closest);
+					closest = current;
+					best = score;
+					centre = setReturnVal(future,0,col,p);
+				}
+
+			}
+			otherMove = centre;
+		}
+	} else {
+		//we're gonna lose now... probably
+		if (bestLoss < 6) {
+			otherMove = loss;
+		}
+	}
+
 	if (max == 4) {
 		return fourMove;
 	}
 	if (max == 3) {
 		return threeMove;
 	}
-	int bestLoss = 6;
-	int farLoss = 0;
-	int loss;
-	if (max == 0) {
-		int nonLosingMoves[21];
-		nonLosingMoves[0] = 0;
-
-		if (depth > 0) {
-			for (i = 0; i < neutralMoves[0]; i++) {
-				int col = getColumn(neutralMoves[i + 1]);
-				int p = getPlayed(neutralMoves[i + 1]);
-				//fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
-				addPiece(col, p);
-				int opponentTurn = burninate(3 - player, depth - 1, origDepth);
-				int opponentScore = getScore(opponentTurn);
-				remPiece(col);
-
-				if (opponentScore < 3) {
-					nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
-					nonLosingMoves[0]++;
-
-				} else if (opponentScore == 6) {
-					//it's a win!
-					if (original)
-						printWin(getFuture(opponentTurn));
-					return setReturnVal(getFuture(opponentTurn),3,col,p); // might not be 3
-				} else if (opponentScore > 0) {
-					//it's a loss!
-					if ((opponentScore <= bestLoss && getFuture(opponentTurn) >= farLoss) || getFuture(opponentTurn) > farLoss) {
-						bestLoss = opponentScore;
-						farLoss = getFuture(opponentTurn);
-						loss = setReturnVal(getFuture(opponentTurn),6,col,p);
-						//
-					}
-				}
-
-			}
-		} else {
-			//don't need to check, no wins
-			return neutralMoves[1];
-		}
-		if (nonLosingMoves[0] > 0) {
-			if (original) {
-				int centre;
-				int centreX = boardSize(columns) / 2;
-				int centreY = boardSize(rows) / 2;
-				int closest = boardSize(columns);
-				int best = -5;
-				for (i = 0; i < nonLosingMoves[0]; i++) {
-					int col = getColumn(nonLosingMoves[i + 1]);
-					int p = getPlayed(nonLosingMoves[i + 1]);
-					addPiece(col, p);
-					int score = enemy * isAlmostWin(col);
-					int row = columnHeight[col];
-					if (p == GREEN)
-						score -= 1;
-					remPiece(col);
-					int current = abs(col - centreX) + 2*abs(row - centreY);
-
-					if (score > best || (score >= best && current < closest)) {
-						//fprintf(stderr, "2Best score is %d with %d, %c\nCurrent: %d, Closest %d\n", best, col, pieces[p], current, closest);
-						closest = current;
-						best = score;
-						if (score > 5) {
-							centre = setReturnVal(0,2,0,nonLosingMoves[i + 1]);
-						} else if (score > 2) {
-							centre = setReturnVal(0,1,0,nonLosingMoves[i + 1]);
-						} else {
-							centre = setReturnVal(0,0,0,nonLosingMoves[i + 1]);
-						}
-					}
-
-				}
-				return centre;
-			}
-			return 0;
-		}
-		//we're gonna lose now... probably
-		if (bestLoss < 6) {
-			if (original && bestLoss > 2)
-				fprintf(stderr, "Poor Trogdor :(\n");
-			return loss;
-		}
-	}
 	//No moves left!
-	return neutralMoves[1];
+	return otherMove;
 }
 
 void addPiece(int col, int colour) {
@@ -595,37 +598,29 @@ void testMacros() {
 	}
 }
 
-void printWin(int distance) {
-	if (distance == 0) {
-		fprintf(stderr, "                     __               ) \n");
-		fprintf(stderr, "            _  \\    | _\\             Q)  / \n");
-		fprintf(stderr, "           / \\  \\   /  (            Q)  / \n");
-		fprintf(stderr, "          /_ |     / _/     \\ /     )       /| \n");
-		fprintf(stderr, "   \\      \\- |     |/       .V.    _       / |______ \n");
-		fprintf(stderr, "    \\      \\_\\_/---------_________/o\\     /        / \n");
-		fprintf(stderr, "            ( |                      |   / /|__   /_____ \n");
-		fprintf(stderr, "         __/  |      _-____   /V-V-V-V    /   /     ___/ \n");
-		fprintf(stderr, "        (      |   v |     \\  \\^_^_^          \\    <______ \n");
-		fprintf(stderr, "  ___    \\  )   \\    v \\    \\_____)     |\\ |\\ \\    _______\\ \n");
-		fprintf(stderr, "         ( / __/  \\  vv  \\              | \\| \\|    \\ \n");
-		fprintf(stderr, "         /  \\       \\  vv  \\            \\       |\\  \\ \n");
-		fprintf(stderr, "        ( |  \\ _      \\      \\           \\  |\\  | \\  \\ \n");
-		fprintf(stderr, "         \\ \\   _)        \\     \\          \\ | \\ |  \\ | \n");
-		fprintf(stderr, "           \\   _)         |     |          \\|  \\|   \\| \n");
-		fprintf(stderr, "        /    \\__)       |\\|    | \n");
-		fprintf(stderr, "       /        ^ /\\  |\\|/    / \n");
-		fprintf(stderr, "                \\\\__\\_|/    /         TROGDOR \n");
-		fprintf(stderr, "                 \\_________/            the \n");
-		fprintf(stderr, "                      |  |           BURNiNATOR \n");
-		fprintf(stderr, "                      |  |____ \n");
-		fprintf(stderr, "                      |___ \n");
-	} else if (distance == 2) {
-		fprintf(stderr, "BURNINATING ALL THE PEOPLE!!!\n");
-	} else if (distance == 4) {
-		fprintf(stderr, "BURNINATING THE PEASANTS!!\n");
-	} else if (distance == 6) {
-		fprintf(stderr, "BURNINATING THE COUNTRYSIDE!\n");
-	}
+void printWin() {
+	fprintf(stderr, "                     __               ) \n");
+	fprintf(stderr, "            _  \    | _\             Q)  / \n");
+	fprintf(stderr, "           / \  \   /  (            Q)  / \n");
+	fprintf(stderr, "          /_ |     / _/     \ /     )       /| \n");
+	fprintf(stderr, "   \      \- |     |/       .V.    _       / |______ \n");
+	fprintf(stderr, "    \      \_\_/---------_________/o\     /        / \n");
+	fprintf(stderr, "            ( |                      |   / /|__   /_____ \n");
+	fprintf(stderr, "         __/  |      _-____   /V-V-V-V    /   /     ___/ \n");
+	fprintf(stderr, "        (      |   v |     \  \^_^_^          \    <______ \n");
+	fprintf(stderr, "  ___    \  )   \    v \    \_____)     |\ |\ \    _______\ \n");
+	fprintf(stderr, "         ( / __/  \  vv  \              | \| \|    \ \n");
+	fprintf(stderr, "         /  \       \  vv  \            \       |\  \ \n");
+	fprintf(stderr, "        ( |  \ _      \      \           \  |\  | \  \ \n");
+	fprintf(stderr, "         \ \   _)        \     \          \ | \ |  \ | \n");
+	fprintf(stderr, "           \   _)         |     |          \|  \|   \| \n");
+	fprintf(stderr, "        /    \__)       |\|    | \n");
+	fprintf(stderr, "       /        ^ /\  |\|/    / \n");
+	fprintf(stderr, "                \\__\_|/    /         TROGDOR \n");
+	fprintf(stderr, "                 \_________/            the \n");
+	fprintf(stderr, "                      |  |           BURNiNATOR \n");
+	fprintf(stderr, "                      |  |____ \n");
+	fprintf(stderr, "                      |___ \n");
 }
 
 /**
@@ -661,7 +656,7 @@ int main(void) {
 		col = getColumn(move);
 		p = pieces[getPlayed(move)];
 		if (getScore(move) > 2 && getFuture(move) == 0)
-			printWin(0);
+			printWin();
 	}
 
 	freeboard();
