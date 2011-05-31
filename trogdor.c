@@ -256,6 +256,7 @@ int isWin(int lastColumn) {
 			for (i = 0; i < 13; i++) {
 				if ((possible[i] & 255) > best) {
 					best = possible[i] & 255;
+					if (best == 5) break;
 				}
 			}
 			return 0 - best;
@@ -265,6 +266,7 @@ int isWin(int lastColumn) {
 			for (i = 0; i < 13; i++) {
 				if ((possible[i] & 65280) >> 8 > best) {
 					best = (possible[i] & 65280) >> 8;
+					if (best == 5) break;
 				}
 			}
 			return best;
@@ -517,11 +519,13 @@ int burninate(int player, int depth, int origDepth) {
 			}
 		} else {
 			//don't need to check, no wins
-			return setReturnVal(future,0,0,0);
+			return neutralMoves[1];
 		}
 		if (nonLosingMoves[0] > 0) {
 			if (original) {
 				int centre;
+				int centreX = boardSize(columns) / 2;
+				int centreY = boardSize(rows) / 2;
 				int closest = boardSize(columns);
 				int best = -5;
 				for (i = 0; i < nonLosingMoves[0]; i++) {
@@ -529,10 +533,11 @@ int burninate(int player, int depth, int origDepth) {
 					int p = getPlayed(nonLosingMoves[i + 1]);
 					addPiece(col, p);
 					int score = enemy * isAlmostWin(col);
+					int row = columnHeight[col];
 					if (p == GREEN)
 						score -= 1;
 					remPiece(col);
-					int current = abs(getColumn(nonLosingMoves[i + 1]) - (boardSize(columns) / 2));
+					int current = abs(col - centreX) + 2*abs(row - centreY);
 
 					if (score > best || (score >= best && current < closest)) {
 						//fprintf(stderr, "2Best score is %d with %d, %c\nCurrent: %d, Closest %d\n", best, col, pieces[p], current, closest);
@@ -560,7 +565,7 @@ int burninate(int player, int depth, int origDepth) {
 		}
 	}
 	//No moves left!
-	return setReturnVal(future,0,0,0);
+	return neutralMoves[1];
 }
 
 void addPiece(int col, int colour) {
@@ -592,28 +597,28 @@ void testMacros() {
 
 void printWin(int distance) {
 	if (distance == 0) {
-		fprintf(stderr, "                     __               )\n");
-		fprintf(stderr, "            _  \\    | _\\             Q)  /\n");
-		fprintf(stderr, "           / \\  \\   /  (            Q)  /\n");
-		fprintf(stderr, "          /_ |     / _/     \\ /     )       /|\n");
-		fprintf(stderr, "   \\      \\- |     |/       .V.    _       / |______\n");
-		fprintf(stderr, "    \\      \\_\\_/---------_________/o\\     /        /\n");
-		fprintf(stderr, "            ( |                      |   / /|__   /_____\n");
-		fprintf(stderr, "         __/  |      _-____   /V-V-V-V    /   /     ___/\n");
-		fprintf(stderr, "        (      |   v |     \\  \\^_^_^          \\    <______\n");
-		fprintf(stderr, "  ___    \\  )   \\    v \\    \\_____)     |\\ |\\ \\    _______\\\n");
-		fprintf(stderr, "         ( / __/  \\  vv  \\              | \\| \\|    \\\n");
-		fprintf(stderr, "         /  \\       \\  vv  \\            \\       |\\  \\\n");
-		fprintf(stderr, "        ( |  \\ _      \\      \\           \\  |\\  | \\  \\\n");
-		fprintf(stderr, "         \\ \\   _)        \\     \\          \\ | \\ |  \\ |\n");
-		fprintf(stderr, "           \\   _)         |     |          \\|  \\|   \\|\n");
-		fprintf(stderr, "        /    \\__)       |\\|    |\n");
-		fprintf(stderr, "       /        ^ /\\  |\\|/    /\n");
-		fprintf(stderr, "                \\\\__\\_|/    /         TROGDOR\n");
-		fprintf(stderr, "                 \\_________/            the\n");
-		fprintf(stderr, "                      |  |           BURNiNATOR\n");
-		fprintf(stderr, "                      |  |____\n");
-		fprintf(stderr, "                      |___\n");
+		fprintf(stderr, "                     __               ) \n");
+		fprintf(stderr, "            _  \\    | _\\             Q)  / \n");
+		fprintf(stderr, "           / \\  \\   /  (            Q)  / \n");
+		fprintf(stderr, "          /_ |     / _/     \\ /     )       /| \n");
+		fprintf(stderr, "   \\      \\- |     |/       .V.    _       / |______ \n");
+		fprintf(stderr, "    \\      \\_\\_/---------_________/o\\     /        / \n");
+		fprintf(stderr, "            ( |                      |   / /|__   /_____ \n");
+		fprintf(stderr, "         __/  |      _-____   /V-V-V-V    /   /     ___/ \n");
+		fprintf(stderr, "        (      |   v |     \\  \\^_^_^          \\    <______ \n");
+		fprintf(stderr, "  ___    \\  )   \\    v \\    \\_____)     |\\ |\\ \\    _______\\ \n");
+		fprintf(stderr, "         ( / __/  \\  vv  \\              | \\| \\|    \\ \n");
+		fprintf(stderr, "         /  \\       \\  vv  \\            \\       |\\  \\ \n");
+		fprintf(stderr, "        ( |  \\ _      \\      \\           \\  |\\  | \\  \\ \n");
+		fprintf(stderr, "         \\ \\   _)        \\     \\          \\ | \\ |  \\ | \n");
+		fprintf(stderr, "           \\   _)         |     |          \\|  \\|   \\| \n");
+		fprintf(stderr, "        /    \\__)       |\\|    | \n");
+		fprintf(stderr, "       /        ^ /\\  |\\|/    / \n");
+		fprintf(stderr, "                \\\\__\\_|/    /         TROGDOR \n");
+		fprintf(stderr, "                 \\_________/            the \n");
+		fprintf(stderr, "                      |  |           BURNiNATOR \n");
+		fprintf(stderr, "                      |  |____ \n");
+		fprintf(stderr, "                      |___ \n");
 	} else if (distance == 2) {
 		fprintf(stderr, "BURNINATING ALL THE PEOPLE!!!\n");
 	} else if (distance == 4) {
@@ -642,7 +647,7 @@ int main(void) {
 		if (columnHeight[i] == boardSize(rows))
 			remColumns--;
 	}
-	fprintf(stderr, "Columns: %d\n", remColumns);
+	//fprintf(stderr, "Columns: %d\n", remColumns);
 	extra = (10 - remColumns) / 2; //look deeper
 	if (totMoves < 2) {
 		p = pieces[BLUE];
@@ -652,7 +657,7 @@ int main(void) {
 			col = last_move;
 		}
 	} else {
-		move = burninate(BLUE, 5 + extra, 5 + extra);
+		move = burninate(BLUE, 4 + extra, 4 + extra);
 		col = getColumn(move);
 		p = pieces[getPlayed(move)];
 		if (getScore(move) > 2 && getFuture(move) == 0)
