@@ -638,7 +638,7 @@ int main(void) {
 		p = pieces[BLUE];
 		col = 4;
 	} else {
-		move = burninate(BLUE, 5, 5);
+		move = burninate(BLUE, 6, 6);
 		col = (move >> 2) & 15;
 		p = pieces[move & 3];
 	}
