@@ -598,30 +598,30 @@ void testMacros() {
 	}
 }
 
-void printWin() {
-	fprintf(stderr, "                     __               ) \n");
-	fprintf(stderr, "            _  \    | _\             Q)  / \n");
-	fprintf(stderr, "           / \  \   /  (            Q)  / \n");
-	fprintf(stderr, "          /_ |     / _/     \ /     )       /| \n");
-	fprintf(stderr, "   \      \- |     |/       .V.    _       / |______ \n");
-	fprintf(stderr, "    \      \_\_/---------_________/o\     /        / \n");
-	fprintf(stderr, "            ( |                      |   / /|__   /_____ \n");
-	fprintf(stderr, "         __/  |      _-____   /V-V-V-V    /   /     ___/ \n");
-	fprintf(stderr, "        (      |   v |     \  \^_^_^          \    <______ \n");
-	fprintf(stderr, "  ___    \  )   \    v \    \_____)     |\ |\ \    _______\ \n");
-	fprintf(stderr, "         ( / __/  \  vv  \              | \| \|    \ \n");
-	fprintf(stderr, "         /  \       \  vv  \            \       |\  \ \n");
-	fprintf(stderr, "        ( |  \ _      \      \           \  |\  | \  \ \n");
-	fprintf(stderr, "         \ \   _)        \     \          \ | \ |  \ | \n");
-	fprintf(stderr, "           \   _)         |     |          \|  \|   \| \n");
-	fprintf(stderr, "        /    \__)       |\|    | \n");
-	fprintf(stderr, "       /        ^ /\  |\|/    / \n");
-	fprintf(stderr, "                \\__\_|/    /         TROGDOR \n");
-	fprintf(stderr, "                 \_________/            the \n");
-	fprintf(stderr, "                      |  |           BURNiNATOR \n");
-	fprintf(stderr, "                      |  |____ \n");
-	fprintf(stderr, "                      |___ \n");
-}
+//void printWin() {
+//	fprintf(stderr, "                     __               ) \n");
+//	fprintf(stderr, "            _  \    | _\             Q)  / \n");
+//	fprintf(stderr, "           / \  \   /  (            Q)  / \n");
+//	fprintf(stderr, "          /_ |     / _/     \ /     )       /| \n");
+//	fprintf(stderr, "   \      \- |     |/       .V.    _       / |______ \n");
+//	fprintf(stderr, "    \      \_\_/---------_________/o\     /        / \n");
+//	fprintf(stderr, "            ( |                      |   / /|__   /_____ \n");
+//	fprintf(stderr, "         __/  |      _-____   /V-V-V-V    /   /     ___/ \n");
+//	fprintf(stderr, "        (      |   v |     \  \^_^_^          \    <______ \n");
+//	fprintf(stderr, "  ___    \  )   \    v \    \_____)     |\ |\ \    _______\ \n");
+//	fprintf(stderr, "         ( / __/  \  vv  \              | \| \|    \ \n");
+//	fprintf(stderr, "         /  \       \  vv  \            \       |\  \ \n");
+//	fprintf(stderr, "        ( |  \ _      \      \           \  |\  | \  \ \n");
+//	fprintf(stderr, "         \ \   _)        \     \          \ | \ |  \ | \n");
+//	fprintf(stderr, "           \   _)         |     |          \|  \|   \| \n");
+//	fprintf(stderr, "        /    \__)       |\|    | \n");
+//	fprintf(stderr, "       /        ^ /\  |\|/    / \n");
+//	fprintf(stderr, "                \\__\_|/    /         TROGDOR \n");
+//	fprintf(stderr, "                 \_________/            the \n");
+//	fprintf(stderr, "                      |  |           BURNiNATOR \n");
+//	fprintf(stderr, "                      |  |____ \n");
+//	fprintf(stderr, "                      |___ \n");
+//}
 
 /**
  * Calls functions to read in board etc.
@@ -644,19 +644,14 @@ int main(void) {
 	}
 	//fprintf(stderr, "Columns: %d\n", remColumns);
 	extra = (10 - remColumns) / 2; //look deeper
-	if (totMoves < 2) {
+
+	if (totMoves == 0) {
 		p = pieces[BLUE];
-		if (totMoves == 0) {
-			col = 0;
-		} else {
-			col = last_move;
-		}
+		col = 5;
 	} else {
-		move = burninate(BLUE, 4 + extra, 4 + extra);
+		move = burninate(BLUE, 5 + extra, 5 + extra);
 		col = getColumn(move);
 		p = pieces[getPlayed(move)];
-		if (getScore(move) > 2 && getFuture(move) == 0)
-			printWin();
 	}
 
 	freeboard();
