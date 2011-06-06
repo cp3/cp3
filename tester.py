@@ -4,7 +4,7 @@ import time
 Takes in inputs from testData.txt in the form of "board description	#" 
 where # represents the points for a win at that point in time. 
 '''
-def main():
+def testIsWin():
 	file = open('testData.txt', 'r');
 	input = file.read()
 	lines = input.split("\n")
@@ -30,14 +30,14 @@ def main():
 			print 'Actual: '+str(actual[1])
 			numberFailed +=1
 		
-	stats(listOfTimes, numberPassed, numberFailed)
+	statsIsWin(listOfTimes, numberPassed, numberFailed)
 '''
 Method used for printing useful stats relating to the previous tests
 
 Times are based soley on passing test cases, failed test cases are not included
 in the time calculations
 '''
-def stats(listOfTimes, numberPassed, numberFailed):
+def statsIsWin(listOfTimes, numberPassed, numberFailed):
 	listOfTimes.sort()
 	avrTime = 0
 	for i in listOfTimes:
@@ -49,8 +49,34 @@ def stats(listOfTimes, numberPassed, numberFailed):
 	print 'Average Time:\t'+str(avrTime)
 	print 'Fastest Time:\t'+str(listOfTimes[0])
 	print 'Slowest Time:\t'+str(listOfTimes[-1])
+	
 
+'''
+'''
+def testAI():
+	file = open('testPiecePlacement.txt', 'r');
+	input = file.read()
+	lines = input.split("\n")
+	pipeFile = open('pipeData', 'w');
+	for line in lines:
+		if(len(line) > 1 ):
+			print '==================================================\n'
+			pipeFile = open('pipeData', 'w');
+			temp = line.split("\t");
+			command = line.split("\t")[0]
+			expected = line.split("\t")[1]
+			pipeFile.write(command+"\n")
+			pipeFile.close()
+			actual = commands.getstatusoutput('./trogdor.o < pipeData')
+			printBoard = commands.getstatusoutput('./print < pipeData')
+			print '\nBOARD STATE:\n'
+			print printBoard[1]
+			print '\nCurrent Move:\n'
+			print actual[1]
+			print'\nOld Move:\n'
+			print expected
+			print '==================================================\n'
 
 if __name__ == "__main__":
-    main()
+    testAI()
     
