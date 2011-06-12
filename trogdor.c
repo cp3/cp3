@@ -12,9 +12,11 @@
 // Macros
 #define getPiece(r,c) board[skipPadding + r + c * rows]
 #define boardSize(x) (x - PADDING)
-#define setReturnVal(future,score,column,played) ((future << 10) + (score << 6) + (column << 2) + played)
+#define setReturnVal(future,points,column,played) ((future << 10) + (points << 6) + (column << 2) + played)
+#define setReturnValScore(score,future,points,column,played) ((score << 14) + (future << 10) + (points << 6) + (column << 2) + played)
+#define getScore(x) ((x >> 14) & 127)
 #define getFuture(x) ((x >> 10) & 15)
-#define getScore(x) ((x >> 6) & 15)
+#define getPoints(x) ((x >> 6) & 15)
 #define getColumn(x) ((x >> 2) & 15)
 #define getPlayed(x) (x & 3)
 
@@ -409,6 +411,39 @@ int getTop(int column) {
 	}
 }
 
+//Should make this function better
+int columnWins() {
+	int points = 0;
+	int i, j;
+	for (i = 0; i < boardSize(columns); i++) {
+		if (columnHeight[i] >= boardSize(rows))
+			continue;
+
+		int placed = 1;
+		addPiece(i, RED);
+		while (columnHeight[i] < boardSize(rows)) {
+			addPiece(i, GREEN);
+			placed++;
+			if (isWin(i) > 2) {
+				points++;
+			} else if (isWin(i) < -2) {
+				points--;
+			}
+			remPiece(i);
+			addPiece(i, BLUE);
+			if (isWin(i) > 2) {
+				points++;
+			}
+		}
+		for (j = 0; j < placed; j++) {
+			remPiece(i);
+		}
+	}
+	//printBoard();
+	//fprintf(stderr, "Points: %d\n",points);
+	return points;
+}
+
 int burninate(int player, int depth, int origDepth) {
 	int i, points, colour, future;
 	int fourMove;
@@ -492,13 +527,14 @@ int burninate(int player, int depth, int origDepth) {
 			//fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
 			addPiece(col, p);
 			int opponentTurn = burninate(3 - player, depth - 1, origDepth);
-			int opponentScore = getScore(opponentTurn);
+			int opponentScore = getPoints(opponentTurn);
 			remPiece(col);
 
 			if (opponentScore < 3) {
 				nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
 				nonLosingMoves[0]++;
 
+				//fprintf(stderr, "Neutral move: %d, %c Score %d\n", col, pieces[p], getScore(opponentTurn));
 			} else if (opponentScore > 5) {
 				//it's a win!
 				points = opponentScore - 3;
@@ -516,7 +552,7 @@ int burninate(int player, int depth, int origDepth) {
 				}
 			} else if (opponentScore > 0) {
 				//it's a loss!
-				if ((opponentScore <= bestLoss && getFuture(opponentTurn) >= farLoss) || getFuture(opponentTurn) > farLoss) {
+				if ((opponentScore <= bestLoss && getFuture(opponentTurn) >= farLoss) || (getFuture(opponentTurn) > farLoss) && getFuture(opponentTurn) <= 5) {
 					bestLoss = opponentScore;
 					farLoss = getFuture(opponentTurn);
 					loss = setReturnVal(getFuture(opponentTurn),opponentScore+3,col,p);
@@ -537,10 +573,10 @@ int burninate(int player, int depth, int origDepth) {
 				int col = getColumn(nonLosingMoves[i + 1]);
 				int p = getPlayed(nonLosingMoves[i + 1]);
 				addPiece(col, p);
-				int score = enemy * isAlmostWin(col);
+
+				int score = columnWins();
 				int row = columnHeight[col];
-				if (p == GREEN)
-					score -= 1;
+
 				remPiece(col);
 				int current = abs(col - centreX) + 2 * abs(row - centreY);
 
@@ -588,7 +624,7 @@ void testMacros() {
 			for (column = 0; column < 16; column++) {
 				for (played = 0; played < 4; played++) {
 					x = setReturnVal(future,score,column,played);
-					if (future != getFuture(x) || score != getScore(x) || column != getColumn(x) || played != getPlayed(x)) {
+					if (future != getFuture(x) || score != getPoints(x) || column != getColumn(x) || played != getPlayed(x)) {
 						printf("Broke on:\nfuture: %d\nscore: %d\ncolumn: %d\nplayed: %d\n\n", future, score, column, played);
 					}
 
@@ -643,11 +679,11 @@ int main(void) {
 			remColumns--;
 	}
 	//fprintf(stderr, "Columns: %d\n", remColumns);
-	extra = (10 - remColumns) / 2; //look deeper
+	extra = (11 - remColumns) / 2; //look deeper
 
 	if (totMoves == 0) {
 		p = pieces[BLUE];
-		col = 5;
+		col = 4;
 	} else {
 		move = burninate(BLUE, 5 + extra, 5 + extra);
 		col = getColumn(move);
