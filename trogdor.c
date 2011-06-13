@@ -420,20 +420,44 @@ int columnWins() {
 			continue;
 
 		int placed = 1;
+		int lastBlue = 0;
+		int lastRed = 0;
 		addPiece(i, RED);
 		while (columnHeight[i] < boardSize(rows)) {
+			int soFar = 0;
+			int soFarR = 0;
 			addPiece(i, GREEN);
 			placed++;
 			if (isWin(i) > 2) {
 				points++;
+				if (lastBlue) {
+					points += 10;
+					break;
+				} else {
+					soFar = 1;
+				}
 			} else if (isWin(i) < -2) {
 				points--;
+				if (lastRed) {
+					points -= 10;
+					break;
+				} else {
+					soFarR = 1;
+				}
 			}
 			remPiece(i);
 			addPiece(i, BLUE);
 			if (isWin(i) > 2) {
 				points++;
+				if (lastBlue) {
+					points += 10;
+					break;
+				} else {
+					soFar = 1;
+				}
 			}
+			lastBlue = soFar;
+			lastRed = soFarR;
 		}
 		for (j = 0; j < placed; j++) {
 			remPiece(i);
@@ -441,13 +465,15 @@ int columnWins() {
 	}
 	//printBoard();
 	//fprintf(stderr, "Points: %d\n",points);
-	return points;
+	return 25 + points;
 }
 
 int burninate(int player, int depth, int origDepth) {
 	int i, points, colour, future;
+	int score = 0;
 	int fourMove;
 	int threeMove;
+	int oneMove;
 	int otherMove;
 	int neutralMoves[21];
 	int enemy = 1;
@@ -482,9 +508,18 @@ int burninate(int player, int depth, int origDepth) {
 			if (points == 3) {
 				threeMove = setReturnVal(future,3,i,colour);
 			}
+			if (points == 1) {
+				oneMove = setReturnVal(future,1,i,colour);
+			}
 		}
 		if (points == 0) {
-			neutralMoves[neutralMoves[0] + 1] = setReturnVal(future,0,i,colour);
+			if (future == 2) {
+				score = columnWins();
+				//fprintf(stderr, "%d\n",score);
+			} else {
+				score = 0;
+			}
+			neutralMoves[neutralMoves[0] + 1] = setReturnValScore(score,future,0,i,colour);
 			neutralMoves[0]++;
 		}
 	}
@@ -506,9 +541,18 @@ int burninate(int player, int depth, int origDepth) {
 			if (points == 3) {
 				threeMove = setReturnVal(future,3,i,colour);
 			}
+			if (points == 1) {
+				oneMove = setReturnVal(future,1,i,colour);
+			}
 		}
 		if (points == 0) {
-			neutralMoves[neutralMoves[0] + 1] = setReturnVal(future,0,i,colour);
+			if (future == 2) {
+				score = columnWins();
+				//fprintf(stderr, "%d\n",score);
+			} else {
+				score = 0;
+			}
+			neutralMoves[neutralMoves[0] + 1] = setReturnValScore(score,future,0,i,colour);
 			neutralMoves[0]++;
 		}
 	}
@@ -519,8 +563,9 @@ int burninate(int player, int depth, int origDepth) {
 	otherMove = neutralMoves[1];
 	int nonLosingMoves[21];
 	nonLosingMoves[0] = 0;
+	int opWorst = 100; // for opponent turn
 
-	if (depth > 0) {
+	if (depth > 0 && max < 1 || original) {
 		for (i = 0; i < neutralMoves[0]; i++) {
 			int col = getColumn(neutralMoves[i + 1]);
 			int p = getPlayed(neutralMoves[i + 1]);
@@ -530,10 +575,18 @@ int burninate(int player, int depth, int origDepth) {
 			int opponentScore = getPoints(opponentTurn);
 			remPiece(col);
 
-			if (opponentScore < 3) {
-				nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
+			if (opponentScore < 1) {
+				if (future == 1 && getScore(opponentTurn) < opWorst) {
+					//fprintf(stderr, "Found: %d\n", score);
+					opWorst = getScore(opponentTurn);
+				}
+				if (original) {
+					//fprintf(stderr, "Found: %d\n", getScore(opponentTurn));
+					nonLosingMoves[nonLosingMoves[0] + 1] = setReturnValScore(getScore(opponentTurn),0,0,0,neutralMoves[i + 1]);
+				} else {
+					nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
+				}
 				nonLosingMoves[0]++;
-
 				//fprintf(stderr, "Neutral move: %d, %c Score %d\n", col, pieces[p], getScore(opponentTurn));
 			} else if (opponentScore > 5) {
 				//it's a win!
@@ -549,6 +602,9 @@ int burninate(int player, int depth, int origDepth) {
 					if (points == 3) {
 						threeMove = setReturnVal(future,3,col,p);
 					}
+					if (points == 1) {
+						oneMove = setReturnVal(future,1,col,p);
+					}
 				}
 			} else if (opponentScore > 0) {
 				//it's a loss!
@@ -562,7 +618,7 @@ int burninate(int player, int depth, int origDepth) {
 
 		}
 	}
-	if (nonLosingMoves[0] > 0) {
+	if (max == 0 && nonLosingMoves[0] > 0) {
 		if (original) {
 			int centre;
 			int centreX = boardSize(columns) / 2;
@@ -572,18 +628,18 @@ int burninate(int player, int depth, int origDepth) {
 			for (i = 0; i < nonLosingMoves[0]; i++) {
 				int col = getColumn(nonLosingMoves[i + 1]);
 				int p = getPlayed(nonLosingMoves[i + 1]);
-				addPiece(col, p);
-
-				int score = columnWins();
+				//addPiece(col, p);
+				int score = getScore(nonLosingMoves[i + 1]);
+				//int score = columnWins();
 				int row = columnHeight[col];
 
-				remPiece(col);
+				//remPiece(col);
 				int current = abs(col - centreX) + 2 * abs(row - centreY);
 
 				if (score > best || (score >= best && current < closest)) {
-					//fprintf(stderr, "2Best score is %d with %d, %c\nCurrent: %d, Closest %d\n", best, col, pieces[p], current, closest);
 					closest = current;
 					best = score;
+					//fprintf(stderr, "Best score is %d with %d, %c\nCurrent: %d, Closest %d\n", best, col, pieces[p], current, closest);
 					centre = setReturnVal(future,0,col,p);
 				}
 
@@ -602,6 +658,14 @@ int burninate(int player, int depth, int origDepth) {
 	}
 	if (max == 3) {
 		return threeMove;
+	}
+	if (max == 1) {
+		return oneMove;
+	}
+	//opponent wants our worst move
+	if (future == 1) {
+		otherMove = setReturnValScore(opWorst,0,0,0,otherMove);
+		//fprintf(stderr, "Worst: %d\n", opWorst);
 	}
 	//No moves left!
 	return otherMove;
@@ -685,7 +749,7 @@ int main(void) {
 		p = pieces[BLUE];
 		col = 4;
 	} else {
-		move = burninate(BLUE, 5 + extra, 5 + extra);
+		move = burninate(BLUE, 4 + extra, 4 + extra);
 		col = getColumn(move);
 		p = pieces[getPlayed(move)];
 	}
