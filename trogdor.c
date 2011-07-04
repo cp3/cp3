@@ -53,6 +53,7 @@ int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 768, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0,
 		3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1024, 0, 0, 768, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0 };
+int extra[12] = { 0, 99, 99, 7, 4, 3, 2, 1, 1, 0, 0, -1 };
 
 /**
  * Reads in the board and other variables from standard in.
@@ -140,64 +141,56 @@ void printBoard() {
 
 int alphaBeta(int origDepth, int depth, int col, int a, int b, int player) {
 	if (!depth) { //or iswin? add columnwins or improvement of it?
-		return isAlmostWin(col) * 2 + isWin(col) * 16;
+		return isAlmostWin(col) * 2 + isWin(col) * 1024;
 	}
 	int original = 0;
 	if (!(origDepth - depth))
 		original = 1;
 	if (!original) {
 		int tmp = isWin(col);
-		if (tmp)
-			return 16 * (12 - origDepth + depth) * tmp;
+		if (tmp) {
+			if (tmp > 1) {
+				return 1024 * tmp - depth;
+			} else if (tmp < 0) {
+				return 1024 * tmp + depth;
+			} else {
+				return 0;
+			}
+		}
 	}
-	int i;
+	int i, j;
 	if (player == BLUE) {
 		int move;
 		int hasMove = 0;
-		for (i = 0; i < boardSize(columns); i++) {
+		for (j = 0; j < boardSize(columns); j++) {
+			i = boardSize(columns) / 2;
+			if (j & 1) {
+				i -= 1 + j / 2;
+			} else {
+				i += j / 2;
+			}
 			if (columnHeight[i] >= boardSize(rows))
 				continue;
 			hasMove = 1;
-			int pp = placementPoints(columnHeight[i], i);
-			if (original) { //Need to set alpha to -99999 so that placement points will work
-				addPiece(i, BLUE);
-				int tmp = alphaBeta(origDepth, depth - 1, i, -99999, b, RED);
-				remPiece(i);
-				addPiece(i, GREEN);
-				int tmp2 = alphaBeta(origDepth, depth - 1, i, -99999, b, RED);
-				remPiece(i);
-				tmp += pp;
-				tmp2 += pp;
-//				fprintf(stderr, "In row %d, column %d with blue: %d\n", columnHeight[i], i, tmp);
-//				fprintf(stderr, "In row %d, column %d with green: %d\n\n", columnHeight[i], i, tmp2);
-
-				if (tmp > a) {
-					a = tmp;
-					move = setReturnVal(0,a,i,BLUE);
-				}
-				if (tmp2 > a) {
-					a = tmp2;
-					move = setReturnVal(0,a,i,GREEN);
-				}
-			} else {
-				addPiece(i, BLUE);
-				int tmp = alphaBeta(origDepth, depth - 1, i, a, b, RED);
-				remPiece(i);
-				addPiece(i, GREEN);
-				int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, RED);
-				remPiece(i);
-				if (tmp > a) {
-					a = tmp;
-				}
-				if (tmp2 > a) {
-					a = tmp2;
-				}
+			addPiece(i, BLUE);
+			int tmp = alphaBeta(origDepth, depth - 1, i, a, b, RED);
+			remPiece(i);
+			addPiece(i, GREEN);
+			int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, RED);
+			remPiece(i);
+			if (tmp > a) {
+				a = tmp;
+				move = setReturnVal(0,a,i,BLUE);
+			}
+			if (tmp2 > a) {
+				a = tmp2;
+				move = setReturnVal(0,a,i,GREEN);
 			}
 			if (b <= a)
 				break;
 		}
 		if (!hasMove)
-			return 1;
+			return 0;
 		if (original)
 			return move;
 		return a;
@@ -221,7 +214,7 @@ int alphaBeta(int origDepth, int depth, int col, int a, int b, int player) {
 				break;
 		}
 		if (!hasMove)
-			return 1;
+			return 0;
 		return b;
 	}
 }
@@ -515,7 +508,7 @@ int isAlmostWin(int lastColumn) {
 	if (winPoints) {
 		redPoints = winPoints & 255;
 		bluePoints = (winPoints & 65280) >> 8;
-		return bluePoints - redPoints;
+		return bluePoints - 2 * redPoints;
 	}
 
 	return 0;
@@ -532,17 +525,20 @@ int getTop(int column) {
 }
 
 //Should make this function better
-int columnWins() {
+int columnWins(int theirTurn) {
 	int points = 0;
 	int i, j;
 	for (i = 0; i < boardSize(columns); i++) {
 		if (columnHeight[i] >= boardSize(rows))
 			continue;
 
-		int placed = 1;
+		int placed = 0;
 		int lastBlue = 0;
 		int lastRed = 0;
-		addPiece(i, RED);
+		if (theirTurn) {
+			addPiece(i, RED);
+			placed++;
+		}
 		while (columnHeight[i] < boardSize(rows)) {
 			int soFar = 0;
 			int soFarR = 0;
@@ -648,7 +644,7 @@ int main(void) {
 	int totMoves = 0, i;
 	char p;
 	int remColumns;
-	int extra = 0;
+	int extraMoves = 0;
 
 	readboard();
 	remColumns = boardSize(columns);
@@ -660,14 +656,42 @@ int main(void) {
 			remColumns--;
 	}
 	//fprintf(stderr, "Columns: %d\n", remColumns);
-	extra = (11 - remColumns) / 2; //look deeper
+	extraMoves = extra[remColumns]; //look deeper
 
-
-	move = alphaBeta(7+extra, 7+extra, 0, -99999, 99999, BLUE);
-	fprintf(stderr, "Trog-Points: %d\n", move >> 6);
-	col = getColumn(move);
-	p = pieces[getPlayed(move)];
-
+	if (boardSize(columns) == 10) {
+		if (totMoves == 1 && getPiece(0,3) == RED) {
+			col = 4;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 3 && getPiece(0,3) == RED && getPiece(1,3) == RED) {
+			col = 7;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 5 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED) {
+			col = 4;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 7 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED && getPiece(3,4) == RED) {
+			col = 4;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 9 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED && getPiece(3,4) == RED && getPiece(5,4) == RED) {
+			col = 6;
+			p = pieces[GREEN];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else {
+			move = alphaBeta(8 + extraMoves, 8 + extraMoves, 0, -99999, 99999, BLUE);
+			//fprintf(stderr, "Trog-Points: %d\n", move >> 6);
+			col = getColumn(move);
+			p = pieces[getPlayed(move)];
+		}
+	} else {
+		move = alphaBeta(8 + extraMoves, 8 + extraMoves, 0, -99999, 99999, BLUE);
+		//fprintf(stderr, "Trog-Points: %d\n", move >> 6);
+		col = getColumn(move);
+		p = pieces[getPlayed(move)];
+	}
+	//fprintf(stderr, "Trog-Depth: %d\n", 8 + extraMoves);
 	freeboard();
 	//testMacros();
 	printf("(%d,%c)", col + 1, p);
