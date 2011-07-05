@@ -12,9 +12,11 @@
 // Macros
 #define getPiece(r,c) board[skipPadding + r + c * rows]
 #define boardSize(x) (x - PADDING)
-#define setReturnVal(future,score,column,played) ((future << 10) + (score << 6) + (column << 2) + played)
+#define setReturnVal(future,points,column,played) ((future << 10) + (points << 6) + (column << 2) + played)
+#define setReturnValScore(score,future,points,column,played) ((score << 14) + (future << 10) + (points << 6) + (column << 2) + played)
+#define getScore(x) ((x >> 14) & 127)
 #define getFuture(x) ((x >> 10) & 15)
-#define getScore(x) ((x >> 6) & 15)
+#define getPoints(x) ((x >> 6) & 15)
 #define getColumn(x) ((x >> 2) & 15)
 #define getPlayed(x) (x & 3)
 
@@ -51,6 +53,7 @@ int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 768, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0,
 		3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1024, 0, 0, 768, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0 };
+int extra[12] = { 0, 99, 99, 7, 4, 3, 2, 1, 1, 0, 0, -1 };
 
 /**
  * Reads in the board and other variables from standard in.
@@ -136,6 +139,116 @@ void printBoard() {
 	fprintf(stderr, "\n\n");
 }
 
+int alphaBeta(int origDepth, int depth, int col, int a, int b, int player) {
+	if (!depth) { //or iswin? add columnwins or improvement of it?
+		return isAlmostWin(col) * 2 + isWin(col) * 1024;
+	}
+	int original = 0;
+	if (!(origDepth - depth))
+		original = 1;
+	if (!original) {
+		int tmp = isWin(col);
+		if (tmp) {
+			if (tmp > 1) {
+				return 1024 * tmp - depth;
+			} else if (tmp < 0) {
+				return 1024 * tmp + depth;
+			} else {
+				return 0;
+			}
+		}
+	}
+	int i, j;
+	if (player == BLUE) {
+		int move;
+		int hasMove = 0;
+		for (j = 0; j < boardSize(columns); j++) {
+			i = boardSize(columns) / 2;
+			if (j & 1) {
+				i -= 1 + j / 2;
+			} else {
+				i += j / 2;
+			}
+			if (columnHeight[i] >= boardSize(rows))
+				continue;
+			hasMove = 1;
+			addPiece(i, BLUE);
+			int tmp = alphaBeta(origDepth, depth - 1, i, a, b, RED);
+			remPiece(i);
+			addPiece(i, GREEN);
+			int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, RED);
+			remPiece(i);
+			if (tmp > a) {
+				a = tmp;
+				move = setReturnVal(0,a,i,BLUE);
+			}
+			if (tmp2 > a) {
+				a = tmp2;
+				move = setReturnVal(0,a,i,GREEN);
+			}
+			if (b <= a)
+				break;
+		}
+		if (!hasMove)
+			return 0;
+		if (original)
+			return move;
+		return a;
+	} else {
+		int hasMove = 0;
+		for (i = 0; i < boardSize(columns); i++) {
+			if (columnHeight[i] >= boardSize(rows))
+				continue;
+			hasMove = 1;
+			addPiece(i, RED);
+			int tmp = alphaBeta(origDepth, depth - 1, i, a, b, BLUE);
+			remPiece(i);
+			addPiece(i, GREEN);
+			int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, BLUE);
+			remPiece(i);
+			if (tmp < b)
+				b = tmp;
+			if (tmp2 < b)
+				b = tmp2;
+			if (b <= a)
+				break;
+		}
+		if (!hasMove)
+			return 0;
+		return b;
+	}
+}
+
+int placementPoints(int row, int col) {
+	int rows_cpy = boardSize(rows) - 1;
+	int cols_cpy = boardSize(columns) - 1;
+	int x = row - rows_cpy;
+	if (x < 0)
+		x *= -1;
+	if ((rows_cpy - x) < x)
+		x = rows_cpy - x;
+	if (x > 3)
+		x = 3;
+	int y = col - cols_cpy;
+	if (y < 0)
+		y *= -1;
+	if ((cols_cpy - y) < y)
+		y = cols_cpy - y;
+	if (y > 3)
+		y = 3;
+	return x + y;
+}
+
+void testPP() {
+	int i, j;
+	for (i = 7; i >= 0; i--) {
+		for (j = 0; j < 10; j++) {
+			fprintf(stderr, "%d ", placementPoints(i, j));
+		}
+		fprintf(stderr, "\n");
+	}
+}
+
 /**
  * Takes in the last column played
  * Returns an int value of points scored from the board.
@@ -158,10 +271,12 @@ int isWin(int lastColumn) {
 	left = lastColumn - 3;
 	right = lastColumn + 3;
 
+	register int p0 = getPiece(lastRow,lastColumn);
+
 	//printf("Top: %d, Bottom: %d, Right: %d, Left: %d\n", top, bot, right, left);
 
 	// Search vertical
-	a = getPiece(lastRow,lastColumn);
+	a = p0;
 	b = getPiece(lastRow-1,lastColumn) << 2;
 	c = getPiece(lastRow-2,lastColumn) << 4;
 	d = getPiece(lastRow-3,lastColumn) << 6;
@@ -171,75 +286,75 @@ int isWin(int lastColumn) {
 	a = getPiece(lastRow,(left));
 	b = getPiece(lastRow,(left + 1)) << 2;
 	c = getPiece(lastRow,(left + 2)) << 4;
-	d = getPiece(lastRow,(left + 3)) << 6;
+	d = p0 << 6;
 	possible[1] = points[a + b + c + d];
 
 	a = getPiece(lastRow,(left + 1));
 	b = getPiece(lastRow,(left + 2)) << 2;
-	c = getPiece(lastRow,(left + 3)) << 4;
+	c = p0 << 4;
 	d = getPiece(lastRow,(left + 4)) << 6;
 	possible[2] = points[a + b + c + d];
 
 	a = getPiece(lastRow,(left + 2));
-	b = getPiece(lastRow,(left + 3)) << 2;
+	b = p0 << 2;
 	c = getPiece(lastRow,(left + 4)) << 4;
 	d = getPiece(lastRow,(left + 5)) << 6;
 	possible[3] = points[a + b + c + d];
 
-	a = getPiece(lastRow,(left + 3));
+	a = p0;
 	b = getPiece(lastRow,(left + 4)) << 2;
 	c = getPiece(lastRow,(left + 5)) << 4;
 	d = getPiece(lastRow,(left + 6)) << 6;
 	possible[4] = points[a + b + c + d];
 
 	// Search diagonal from top left to bottom right
-	a = getPiece((lastRow + 0),(lastColumn - 0));
+	a = p0;
 	b = getPiece((lastRow + 1),(lastColumn - 1)) << 2;
 	c = getPiece((lastRow + 2),(lastColumn - 2)) << 4;
 	d = getPiece((lastRow + 3),(lastColumn - 3)) << 6;
 	possible[5] = points[a + b + c + d];
 
 	a = getPiece((lastRow - 1),(lastColumn + 1));
-	b = getPiece((lastRow + 0),(lastColumn - 0)) << 2;
+	b = p0 << 2;
 	c = getPiece((lastRow + 1),(lastColumn - 1)) << 4;
 	d = getPiece((lastRow + 2),(lastColumn - 2)) << 6;
 	possible[6] = points[a + b + c + d];
 
 	a = getPiece((lastRow - 2),(lastColumn + 2));
 	b = getPiece((lastRow - 1),(lastColumn + 1)) << 2;
-	c = getPiece((lastRow + 0),(lastColumn - 0)) << 4;
+	c = p0 << 4;
 	d = getPiece((lastRow + 1),(lastColumn - 1)) << 6;
 	possible[7] = points[a + b + c + d];
 
 	a = getPiece((lastRow - 3),(lastColumn + 3));
 	b = getPiece((lastRow - 2),(lastColumn + 2)) << 2;
 	c = getPiece((lastRow - 1),(lastColumn + 1)) << 4;
-	d = getPiece((lastRow + 0),(lastColumn - 0)) << 6;
+	d = p0 << 6;
 	possible[8] = points[a + b + c + d];
 
 	// Search diagonal from top right to bottom left
-	a = getPiece((lastRow + 0),(lastColumn + 0));
+	a = p0;
 	b = getPiece((lastRow + 1),(lastColumn + 1)) << 2;
 	c = getPiece((lastRow + 2),(lastColumn + 2)) << 4;
 	d = getPiece((lastRow + 3),(lastColumn + 3)) << 6;
 	possible[9] = points[a + b + c + d];
 
 	a = getPiece((lastRow - 1),(lastColumn - 1));
-	b = getPiece((lastRow + 0),(lastColumn + 0)) << 2;
+	b = p0 << 2;
 	c = getPiece((lastRow + 1),(lastColumn + 1)) << 4;
 	d = getPiece((lastRow + 2),(lastColumn + 2)) << 6;
 	possible[10] = points[a + b + c + d];
 
 	a = getPiece((lastRow - 2),(lastColumn - 2));
 	b = getPiece((lastRow - 1),(lastColumn - 1)) << 2;
-	c = getPiece((lastRow + 0),(lastColumn + 0)) << 4;
+	c = p0 << 4;
 	d = getPiece((lastRow + 1),(lastColumn + 1)) << 6;
 	possible[11] = points[a + b + c + d];
 
 	a = getPiece((lastRow - 3),(lastColumn - 3));
 	b = getPiece((lastRow - 2),(lastColumn - 2)) << 2;
 	c = getPiece((lastRow - 1),(lastColumn - 1)) << 4;
-	d = getPiece((lastRow + 0),(lastColumn + 0)) << 6;
+	d = p0 << 6;
 	possible[12] = points[a + b + c + d];
 
 	// Add up wins
@@ -393,7 +508,7 @@ int isAlmostWin(int lastColumn) {
 	if (winPoints) {
 		redPoints = winPoints & 255;
 		bluePoints = (winPoints & 65280) >> 8;
-		return bluePoints - redPoints;
+		return bluePoints - 2 * redPoints;
 	}
 
 	return 0;
@@ -409,166 +524,64 @@ int getTop(int column) {
 	}
 }
 
-int burninate(int player, int depth, int origDepth) {
-	int i, points, colour, future;
-	int fourMove;
-	int threeMove;
-	int otherMove;
-	int neutralMoves[21];
-	int enemy = 1;
-	int max = -6;
-	if (player == RED) {
-		enemy = -1;
-	}
-	int original = 0;
-	if (depth == origDepth) {
-		original = 1;
-		future = 0;
-	} else {
-		future = origDepth - depth;
-	}
-	neutralMoves[0] = 0;
-
-	colour = player;
+//Should make this function better
+int columnWins(int theirTurn) {
+	int points = 0;
+	int i, j;
 	for (i = 0; i < boardSize(columns); i++) {
 		if (columnHeight[i] >= boardSize(rows))
 			continue;
-		addPiece(i, colour);
-		points = enemy * isWin(i);
-		remPiece(i);
-		if (points > max) {
-			max = points;
-			if (points == 5) {
-				return setReturnVal(future,5,i,colour);
-			}
-			if (points == 4) {
-				fourMove = setReturnVal(future,4,i,colour);
-			}
-			if (points == 3) {
-				threeMove = setReturnVal(future,3,i,colour);
-			}
-		}
-		if (points == 0) {
-			neutralMoves[neutralMoves[0] + 1] = setReturnVal(future,0,i,colour);
-			neutralMoves[0]++;
-		}
-	}
-	colour = GREEN;
-	for (i = 0; i < boardSize(columns); i++) {
-		if (columnHeight[i] >= boardSize(rows))
-			continue;
-		addPiece(i, colour);
-		points = enemy * isWin(i);
-		remPiece(i);
-		if (points > max) {
-			max = points;
-			if (points == 5) {
-				return setReturnVal(future,5,i,colour);
-			}
-			if (points == 4) {
-				fourMove = setReturnVal(future,4,i,colour);
-			}
-			if (points == 3) {
-				threeMove = setReturnVal(future,3,i,colour);
-			}
-		}
-		if (points == 0) {
-			neutralMoves[neutralMoves[0] + 1] = setReturnVal(future,0,i,colour);
-			neutralMoves[0]++;
-		}
-	}
-	int bestLoss = 6;
-	int farLoss = 0;
-	int loss;
 
-	otherMove = neutralMoves[1];
-	int nonLosingMoves[21];
-	nonLosingMoves[0] = 0;
-
-	if (depth > 0) {
-		for (i = 0; i < neutralMoves[0]; i++) {
-			int col = getColumn(neutralMoves[i + 1]);
-			int p = getPlayed(neutralMoves[i + 1]);
-			//fprintf(stderr,"Neutral move: %d, %c\n", col, pieces[p]);
-			addPiece(col, p);
-			int opponentTurn = burninate(3 - player, depth - 1, origDepth);
-			int opponentScore = getScore(opponentTurn);
-			remPiece(col);
-
-			if (opponentScore < 3) {
-				nonLosingMoves[nonLosingMoves[0] + 1] = neutralMoves[i + 1];
-				nonLosingMoves[0]++;
-
-			} else if (opponentScore > 5) {
-				//it's a win!
-				points = opponentScore - 3;
-				if (points > max) {
-					max = points;
-					if (points == 5) {
-						return setReturnVal(getFuture(opponentTurn),5,col,p);
-					}
-					if (points == 4) {
-						fourMove = setReturnVal(future,4,col,p);
-					}
-					if (points == 3) {
-						threeMove = setReturnVal(future,3,col,p);
-					}
+		int placed = 0;
+		int lastBlue = 0;
+		int lastRed = 0;
+		if (theirTurn) {
+			addPiece(i, RED);
+			placed++;
+		}
+		while (columnHeight[i] < boardSize(rows)) {
+			int soFar = 0;
+			int soFarR = 0;
+			addPiece(i, GREEN);
+			placed++;
+			if (isWin(i) > 2) {
+				points++;
+				if (lastBlue) {
+					points += 10;
+					break;
+				} else {
+					soFar = 1;
 				}
-			} else if (opponentScore > 0) {
-				//it's a loss!
-				if ((opponentScore <= bestLoss && getFuture(opponentTurn) >= farLoss) || getFuture(opponentTurn) > farLoss) {
-					bestLoss = opponentScore;
-					farLoss = getFuture(opponentTurn);
-					loss = setReturnVal(getFuture(opponentTurn),opponentScore+3,col,p);
-					//
+			} else if (isWin(i) < -2) {
+				points--;
+				if (lastRed) {
+					points -= 10;
+					break;
+				} else {
+					soFarR = 1;
 				}
 			}
-
-		}
-	}
-	if (nonLosingMoves[0] > 0) {
-		if (original) {
-			int centre;
-			int centreX = boardSize(columns) / 2;
-			int centreY = boardSize(rows) / 2;
-			int closest = boardSize(columns);
-			int best = -5;
-			for (i = 0; i < nonLosingMoves[0]; i++) {
-				int col = getColumn(nonLosingMoves[i + 1]);
-				int p = getPlayed(nonLosingMoves[i + 1]);
-				addPiece(col, p);
-				int score = enemy * isAlmostWin(col);
-				int row = columnHeight[col];
-				if (p == GREEN)
-					score -= 1;
-				remPiece(col);
-				int current = abs(col - centreX) + 2 * abs(row - centreY);
-
-				if (score > best || (score >= best && current < closest)) {
-					//fprintf(stderr, "2Best score is %d with %d, %c\nCurrent: %d, Closest %d\n", best, col, pieces[p], current, closest);
-					closest = current;
-					best = score;
-					centre = setReturnVal(future,0,col,p);
+			remPiece(i);
+			addPiece(i, BLUE);
+			if (isWin(i) > 2) {
+				points++;
+				if (lastBlue) {
+					points += 10;
+					break;
+				} else {
+					soFar = 1;
 				}
-
 			}
-			otherMove = centre;
+			lastBlue = soFar;
+			lastRed = soFarR;
 		}
-	} else {
-		//we're gonna lose now... probably
-		if (bestLoss < 6) {
-			otherMove = loss;
+		for (j = 0; j < placed; j++) {
+			remPiece(i);
 		}
 	}
-
-	if (max == 4) {
-		return fourMove;
-	}
-	if (max == 3) {
-		return threeMove;
-	}
-	//No moves left!
-	return otherMove;
+	//printBoard();
+	//fprintf(stderr, "Points: %d\n",points);
+	return points;
 }
 
 void addPiece(int col, int colour) {
@@ -588,7 +601,7 @@ void testMacros() {
 			for (column = 0; column < 16; column++) {
 				for (played = 0; played < 4; played++) {
 					x = setReturnVal(future,score,column,played);
-					if (future != getFuture(x) || score != getScore(x) || column != getColumn(x) || played != getPlayed(x)) {
+					if (future != getFuture(x) || score != getPoints(x) || column != getColumn(x) || played != getPlayed(x)) {
 						printf("Broke on:\nfuture: %d\nscore: %d\ncolumn: %d\nplayed: %d\n\n", future, score, column, played);
 					}
 
@@ -631,7 +644,7 @@ int main(void) {
 	int totMoves = 0, i;
 	char p;
 	int remColumns;
-	int extra = 0;
+	int extraMoves = 0;
 
 	readboard();
 	remColumns = boardSize(columns);
@@ -643,17 +656,42 @@ int main(void) {
 			remColumns--;
 	}
 	//fprintf(stderr, "Columns: %d\n", remColumns);
-	extra = (10 - remColumns) / 2; //look deeper
+	extraMoves = extra[remColumns]; //look deeper
 
-	if (totMoves == 0) {
-		p = pieces[BLUE];
-		col = 5;
+	if (boardSize(columns) == 10) {
+		if (totMoves == 1 && getPiece(0,3) == RED) {
+			col = 4;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 3 && getPiece(0,3) == RED && getPiece(1,3) == RED) {
+			col = 7;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 5 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED) {
+			col = 4;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 7 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED && getPiece(3,4) == RED) {
+			col = 4;
+			p = pieces[BLUE];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else if (totMoves == 9 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED && getPiece(3,4) == RED && getPiece(5,4) == RED) {
+			col = 6;
+			p = pieces[GREEN];
+			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+		} else {
+			move = alphaBeta(8 + extraMoves, 8 + extraMoves, 0, -99999, 99999, BLUE);
+			//fprintf(stderr, "Trog-Points: %d\n", move >> 6);
+			col = getColumn(move);
+			p = pieces[getPlayed(move)];
+		}
 	} else {
-		move = burninate(BLUE, 5 + extra, 5 + extra);
+		move = alphaBeta(8 + extraMoves, 8 + extraMoves, 0, -99999, 99999, BLUE);
+		//fprintf(stderr, "Trog-Points: %d\n", move >> 6);
 		col = getColumn(move);
 		p = pieces[getPlayed(move)];
 	}
-
+	//fprintf(stderr, "Trog-Depth: %d\n", 8 + extraMoves);
 	freeboard();
 	//testMacros();
 	printf("(%d,%c)", col + 1, p);
