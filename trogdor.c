@@ -8,6 +8,8 @@
 #define GREEN	3
 #define PADDING	6
 #define MAX_DEPTH 2
+#define INT_MIN -2147483647
+#define INT_MAX 2147483647
 
 // Macros
 #define getPiece(r,c) board[skipPadding + r + c * rows]
@@ -53,7 +55,7 @@ int points[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 768, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0,
 		3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1024, 0, 0, 768, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1280, 0, 0, 0, 0, 0 };
-int extra[12] = { 0, 99, 99, 7, 4, 3, 2, 1, 1, 0, 0, -1 };
+int extra[12] = { 0, 99, 10, 5, 4, 3, 2, 1, 1, 0, 0, -1 };
 
 /**
  * Reads in the board and other variables from standard in.
@@ -139,20 +141,35 @@ void printBoard() {
 	fprintf(stderr, "\n\n");
 }
 
-int alphaBeta(int origDepth, int depth, int col, int a, int b, int player) {
-	if (!depth) { //or iswin? add columnwins or improvement of it?
-		return isAlmostWin(col) * 2 + isWin(col) * 1024;
+int getMovePro(int depth) {
+	int first = alphaBeta(depth - 4, depth - 4, 0, INT_MIN, INT_MAX, BLUE, 5);
+	//fprintf(stderr, "%d\n\n", getColumn(first));
+	int second = alphaBeta(depth - 2, depth - 2, 0, INT_MIN, INT_MAX, BLUE, getColumn(first));
+	//fprintf(stderr, "%d\n\n", getColumn(second));
+	int final = alphaBeta(depth, depth, 0, INT_MIN, INT_MAX, BLUE, getColumn(second));
+	//fprintf(stderr, "%d\n\n", getColumn(final));
+	return final;
+}
+
+void wasteMovePro(int depth) {
+	int final = alphaBeta(depth - 1, depth - 1, 0, INT_MIN, INT_MAX, BLUE, 5);
+}
+
+int alphaBeta(int origDepth, int depth, int col, int a, int b, int player, int startColumn) {
+	if (!depth) {
+		return isAlmostWin(col) + 1024 * columnWins(player & 1) + isWin(col) * 1048676; //theirTurn = player&1
 	}
 	int original = 0;
+	int next, temp_i;
 	if (!(origDepth - depth))
 		original = 1;
 	if (!original) {
 		int tmp = isWin(col);
 		if (tmp) {
 			if (tmp > 1) {
-				return 1024 * tmp - depth;
+				return 1048676 * tmp + depth;
 			} else if (tmp < 0) {
-				return 1024 * tmp + depth;
+				return 1048676 * (tmp - 5 * depth);
 			} else {
 				return 0;
 			}
@@ -162,21 +179,33 @@ int alphaBeta(int origDepth, int depth, int col, int a, int b, int player) {
 	if (player == BLUE) {
 		int move;
 		int hasMove = 0;
-		for (j = 0; j < boardSize(columns); j++) {
+		for (j = 0; j <= boardSize(columns); j++) {
 			i = boardSize(columns) / 2;
 			if (j & 1) {
 				i -= 1 + j / 2;
 			} else {
 				i += j / 2;
 			}
+			if (j == 0) {
+				next = i;
+				i = startColumn;
+			} else {
+				temp_i = i;
+				i = next;
+				next = temp_i;
+				if (i == startColumn)
+					continue;
+			}
+//			if (original)
+//				fprintf(stderr, "doing %d\n", i);
 			if (columnHeight[i] >= boardSize(rows))
 				continue;
 			hasMove = 1;
 			addPiece(i, BLUE);
-			int tmp = alphaBeta(origDepth, depth - 1, i, a, b, RED);
+			int tmp = alphaBeta(origDepth, depth - 1, i, a, b, RED, startColumn);
 			remPiece(i);
 			addPiece(i, GREEN);
-			int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, RED);
+			int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, RED, startColumn);
 			remPiece(i);
 			if (tmp > a) {
 				a = tmp;
@@ -201,10 +230,10 @@ int alphaBeta(int origDepth, int depth, int col, int a, int b, int player) {
 				continue;
 			hasMove = 1;
 			addPiece(i, RED);
-			int tmp = alphaBeta(origDepth, depth - 1, i, a, b, BLUE);
+			int tmp = alphaBeta(origDepth, depth - 1, i, a, b, BLUE, startColumn);
 			remPiece(i);
 			addPiece(i, GREEN);
-			int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, BLUE);
+			int tmp2 = alphaBeta(origDepth, depth - 1, i, a, b, BLUE, startColumn);
 			remPiece(i);
 			if (tmp < b)
 				b = tmp;
@@ -535,11 +564,12 @@ int columnWins(int theirTurn) {
 		int placed = 0;
 		int lastBlue = 0;
 		int lastRed = 0;
+		int done = 0;
 		if (theirTurn) {
 			addPiece(i, RED);
 			placed++;
 		}
-		while (columnHeight[i] < boardSize(rows)) {
+		while (columnHeight[i] < boardSize(rows) && !done) {
 			int soFar = 0;
 			int soFarR = 0;
 			addPiece(i, GREEN);
@@ -574,6 +604,8 @@ int columnWins(int theirTurn) {
 			}
 			lastBlue = soFar;
 			lastRed = soFarR;
+			if (getPiece(columnHeight[i],i-1) == SPACE && getPiece(columnHeight[i],i+1) == SPACE)
+				break;
 		}
 		for (j = 0; j < placed; j++) {
 			remPiece(i);
@@ -640,6 +672,7 @@ void testMacros() {
  * Calls functions to read in board etc.
  */
 int main(void) {
+	int startingDepth = 7;
 	int col, move;
 	int totMoves = 0, i;
 	char p;
@@ -658,40 +691,56 @@ int main(void) {
 	//fprintf(stderr, "Columns: %d\n", remColumns);
 	extraMoves = extra[remColumns]; //look deeper
 
-	if (boardSize(columns) == 10) {
+	if (boardSize(columns) == 10 && totMoves < 12) {
 		if (totMoves == 1 && getPiece(0,3) == RED) {
 			col = 4;
 			p = pieces[BLUE];
-			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+			wasteMovePro(startingDepth + extraMoves);
 		} else if (totMoves == 3 && getPiece(0,3) == RED && getPiece(1,3) == RED) {
 			col = 7;
 			p = pieces[BLUE];
-			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+			wasteMovePro(startingDepth + extraMoves);
 		} else if (totMoves == 5 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED) {
 			col = 4;
 			p = pieces[BLUE];
-			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+			wasteMovePro(startingDepth + extraMoves);
 		} else if (totMoves == 7 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED && getPiece(3,4) == RED) {
 			col = 4;
 			p = pieces[BLUE];
-			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+			wasteMovePro(startingDepth + extraMoves);
 		} else if (totMoves == 9 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED && getPiece(3,4) == RED && getPiece(5,4) == RED) {
 			col = 6;
 			p = pieces[GREEN];
-			alphaBeta(7, 7, 0, -99999, 99999, BLUE);
+			wasteMovePro(startingDepth + extraMoves);
+		} else if (totMoves == 11 && getPiece(0,3) == RED && getPiece(1,3) == RED && getPiece(1,4) == RED && getPiece(3,4) == RED && getPiece(5,4) == RED && getPiece(5,4) == RED) {
+			col = 7;
+			p = pieces[BLUE];
+			wasteMovePro(startingDepth + extraMoves);
+		} else if (totMoves == 0) {
+			col = 2;
+			p = pieces[BLUE];
+			wasteMovePro(startingDepth + extraMoves);
+		} else if (totMoves == 2 && getPiece(0,3) == RED) {
+			col = 3;
+			p = pieces[BLUE];
+			wasteMovePro(startingDepth + extraMoves);
+		} else if (totMoves == 6 && getPiece(0,3) == RED && getPiece(0,4) == RED && getPiece(1,2) == RED) {
+			col = 6;
+			p = pieces[BLUE];
+			wasteMovePro(startingDepth + extraMoves);
 		} else {
-			move = alphaBeta(8 + extraMoves, 8 + extraMoves, 0, -99999, 99999, BLUE);
+			move = getMovePro(startingDepth + extraMoves);
 			//fprintf(stderr, "Trog-Points: %d\n", move >> 6);
 			col = getColumn(move);
 			p = pieces[getPlayed(move)];
 		}
 	} else {
-		move = alphaBeta(8 + extraMoves, 8 + extraMoves, 0, -99999, 99999, BLUE);
+		move = getMovePro(startingDepth + extraMoves);
 		//fprintf(stderr, "Trog-Points: %d\n", move >> 6);
 		col = getColumn(move);
 		p = pieces[getPlayed(move)];
 	}
-	//fprintf(stderr, "Trog-Depth: %d\n", 8 + extraMoves);
+	//fprintf(stderr, "Trog-Depth: %d\n", startingDepth + extraMoves);
 	freeboard();
 	//testMacros();
 	printf("(%d,%c)", col + 1, p);
